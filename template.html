@@ -1,0 +1,236 @@
+<title>Find My Next Car</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column. Plate field first, then the car we found, then three cards that each carry the two links. */
+:root{--plate:#F2C200;--plate-ink:#10151C;--eu:#1B4DB1;--bg:#F3F5F8;--surface:#FFFFFF;--ink:#10151C;--muted:#586271;--line:#D9DEE6;--blue:#1B4DB1;--blue-soft:#E4ECFA;--warn:#8A4B00;--warn-bg:#FFF1D6;--shadow:0 1px 2px rgba(16,21,28,.06),0 8px 24px rgba(16,21,28,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1117;--surface:#161C25;--ink:#EEF1F5;--muted:#9AA5B4;--line:#2A3340;--blue:#7DA2F0;--blue-soft:#1A2640;--warn:#F0B35A;--warn-bg:#2B2113;--shadow:none;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D1117;--surface:#161C25;--ink:#EEF1F5;--muted:#9AA5B4;--line:#2A3340;--blue:#7DA2F0;--blue-soft:#1A2640;--warn:#F0B35A;--warn-bg:#2B2113;--shadow:none;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 'Public Sans',system-ui,sans-serif;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font:700 22px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.tag{background:var(--plate);color:var(--plate-ink);padding:2px 10px;border-radius:4px;border-left:8px solid var(--blue)}
+button{font:inherit;cursor:pointer;color:inherit}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px;color:var(--muted)}
+.ghost:hover{border-color:var(--ink);color:var(--ink)}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif;text-wrap:balance;margin:0;line-height:1.05}
+.hero h1{font-size:clamp(40px,9vw,68px);font-weight:700;text-transform:uppercase}
+.hero p{color:var(--muted);max-width:54ch;margin:14px 0 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:24px}
+.lbl{display:block;font:600 13px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
+.platebox{display:flex;align-items:stretch;background:var(--plate);color:var(--plate-ink);border:2px solid var(--plate-ink);border-radius:8px;overflow:hidden;flex:1 1 220px;max-width:300px;min-width:0}
+.platebox .eu{background:var(--eu);color:#fff;font:600 13px 'IBM Plex Mono',monospace;display:flex;align-items:flex-end;justify-content:center;padding:6px 9px}
+.platebox input{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--plate-ink);font:700 28px/1 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:12px;outline:none}
+.platebox input::placeholder{color:rgba(16,21,28,.38);opacity:1}
+.platebox:focus-within{outline:3px solid var(--blue);outline-offset:2px}
+.cta{background:var(--plate);color:var(--plate-ink);border:0;border-radius:10px;padding:14px 22px;font-weight:600;font-size:16px}
+.cta:hover{filter:brightness(.95)}
+.cta:disabled{opacity:.5;cursor:default}
+.cta:focus-visible,.ghost:focus-visible,.ex:focus-visible,.link:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.disc{margin:14px 0 0;font-size:13px;color:var(--muted)}
+.exs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.ex{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px}
+.ex:hover{border-color:var(--blue)}
+.msg{margin-top:14px;border-radius:10px;padding:12px 14px;font-size:14px;background:var(--warn-bg);color:var(--warn)}
+.msg:empty{display:none}
+.own{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+.own h2{font-size:clamp(26px,6vw,34px);font-weight:700;text-transform:uppercase}
+.own p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.mono{font:500 13px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.res{display:flex;flex-direction:column;gap:16px}
+.res>h2{font-size:clamp(28px,6vw,38px);font-weight:600}
+.pick .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.rank{font:700 14px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.rank .n{background:var(--plate);color:var(--plate-ink);border-left:6px solid var(--blue);padding:2px 10px;border-radius:3px;font-size:18px}
+.pick h3{font-size:clamp(30px,7vw,42px);font-weight:700;margin-top:10px}
+.pick .bl{font:500 13px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:16px 0 0}
+.specs div{background:var(--surface);padding:10px 12px;min-width:0}
+.specs dt{font:500 11px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.specs dd{margin:2px 0 0;font:500 15px 'IBM Plex Mono',monospace}
+ul.why{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+ul.why li{padding-left:22px;position:relative}
+ul.why li::before{content:"\2713";position:absolute;left:0;color:var(--blue);font-weight:700}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.link{display:inline-flex;flex-direction:column;border:1.5px solid var(--blue);border-radius:10px;padding:10px 14px;color:var(--blue);font-weight:600;text-decoration:none;font-size:15px;min-width:0}
+.link small{font:400 12px 'Public Sans',sans-serif;color:var(--muted)}
+.link:hover{background:var(--blue-soft)}
+.chip{font:500 12px 'IBM Plex Mono',monospace;background:var(--blue-soft);color:var(--blue);border-radius:999px;padding:3px 10px;text-transform:uppercase;letter-spacing:.04em}
+.link.none{border-style:dashed;border-color:var(--line);color:var(--muted);cursor:default}
+.note{color:var(--muted);font-size:14px;margin:12px 0 0}
+.callout{background:var(--blue-soft);border-radius:10px;padding:12px 14px;font-size:14px}
+.callout.warn{background:var(--warn-bg);color:var(--warn)}
+.tune{display:grid;gap:14px}
+.tune h2{font-size:clamp(22px,5vw,28px);font-weight:600}
+.tune p{margin:0;color:var(--muted);font-size:14px}
+.grp{display:grid;gap:6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:14px;color:var(--fg)}
+.opt:hover{border-color:var(--blue)}
+.opt[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.opt:focus-visible,.swap:focus-visible,.reset:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.gains{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gains li{background:var(--surface);padding:9px 12px;display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;font-size:14px}
+.gains li b{font:500 12px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.gains .gh{font:500 11px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+.swap,.reset{background:transparent;border:0;color:var(--muted);font-size:14px;text-decoration:underline;padding:4px 2px}
+.swap:hover,.reset:hover{color:var(--blue)}
+.foot{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.foot .links{margin-top:0}
+footer{color:var(--muted);font-size:13px;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:20px}
+footer p{margin:0}
+@media (prefers-reduced-motion:no-preference){.pick{animation:rise .35s ease-out both}.pick:nth-of-type(2){animation-delay:.08s}.pick:nth-of-type(3){animation-delay:.16s}}
+@keyframes rise{from{transform:translateY(8px)}to{transform:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="tag">NL</span> Find my next car</div>
+    <button class="ghost" id="theme" type="button" aria-label="Toggle theme">Theme</button>
+  </header>
+
+  <section class="hero">
+    <h1>See what has changed since you bought your car</h1>
+    <p>Enter your number plate. We read your car from the Dutch vehicle register and show three newer cars that launched in the Netherlands since mid 2025: a real step forward in technology and efficiency, from other brands than yours.</p>
+  </section>
+
+  <section class="card" aria-labelledby="platelbl">
+    <label class="lbl" id="platelbl" for="plateIn">Your number plate</label>
+    <form class="row" id="plateForm" autocomplete="off">
+      <div class="platebox"><span class="eu">NL</span><input id="plateIn" inputmode="text" maxlength="9" placeholder="XX-123-Y" aria-describedby="disc" autocapitalize="characters" spellcheck="false"></div>
+      <button class="cta" id="go" type="submit">Find my next car</button>
+    </form>
+    <p class="disc" id="disc">Your plate is sent only to the RDW's public open data service to look up make, model and fuel. We do not store or log it.</p>
+    <div class="msg" id="msg" role="status"></div>
+    <span class="lbl" style="margin-top:20px">No plate to hand? Try an example</span>
+    <div class="exs" id="exs"></div>
+  </section>
+
+  <div id="out"></div>
+
+  <footer>
+    <p>Find My Next Car is an independent tool, not affiliated with any car brand or the RDW. Prices are Dutch list prices as of November 2026; a leading ≈ means the price is indicative.</p>
+    <p>Coverage links point to independent magazines, motoring clubs and consumer bodies, in Dutch, English or German as noted, never to the manufacturer. Where we have none on file the card says so. YouTube reviews are not included yet.</p>
+  </footer>
+</div>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+/*NEXT*/
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.ShortList, N = window.NextCar;
+  const $ = id => document.getElementById(id);
+  const urls = {};
+  E.CARS.forEach(c => { const d = E.describe([c.id], 'cash'); urls[c.id] = d && d[0] ? d[0].modelUrl : null; });
+
+  const EXAMPLES = [
+    { label: '2013 Volkswagen Golf, petrol', own: { make: 'Volkswagen', model: 'Golf', pt: 'ice', seats: 5, size: 3, power: 3, year: 2013, listPrice: 24000, body: 'hatch', fuel: 'Petrol', kw: 90, co2: 125 } },
+    { label: '2016 Toyota Yaris, hybrid', own: { make: 'Toyota', model: 'Yaris', pt: 'hev', seats: 5, size: 2, power: 2, year: 2016, listPrice: 21000, body: 'hatch', fuel: 'Hybrid (Petrol + electric)', kw: 74, co2: 86 } },
+    { label: '2018 Kia Sportage, diesel', own: { make: 'Kia', model: 'Sportage', pt: 'ice', seats: 5, size: 3, power: 2, year: 2018, listPrice: 36995, body: 'suv', fuel: 'Diesel', kw: 85, co2: 129 } },
+    { label: '2015 Renault Twingo, petrol', own: { make: 'Renault', model: 'Twingo', pt: 'ice', seats: 4, size: 1, power: 1, year: 2015, listPrice: 12000, body: 'city', fuel: 'Petrol', kw: 51, co2: 114 } },
+    { label: '2019 Tesla Model 3, electric', own: { make: 'Tesla', model: 'Model 3', pt: 'bev', seats: 5, size: 3, power: 5, year: 2019, listPrice: 50000, body: 'sedan', fuel: 'Electric', kw: 211, range: 560 } }
+  ];
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const setMsg = t => { $('msg').textContent = t || ''; };
+
+  // state: the owner's car, the three optional answers, and the cars they swapped out
+  let st = null;
+  const FIELDS = [
+    { key: 'budget', label: 'Budget', opts: [['same', 'Close to what your car cost'], ['u30', 'Up to €33,000'], ['u45', 'Up to €48,000'], ['u60', 'Up to €65,000'], ['any', 'No limit']] },
+    { key: 'charge', label: 'Can you charge at home?', opts: [['yes', 'Yes'], ['no', 'No'], ['unsure', 'Not sure']] },
+    { key: 'use', label: 'Main use', opts: [['city', 'Town and short trips'], ['family', 'Family and luggage'], ['long', 'Long motorway trips']] }
+  ];
+  function tuneHtml() {
+    return '<section class="card tune" aria-labelledby="tunelbl"><div><h2 id="tunelbl">Fine-tune (optional)</h2><p>Three quick answers sharpen the picks. Skip them and you get the general version.</p></div>' +
+      FIELDS.map(f => '<div class="grp" role="group" aria-label="' + esc(f.label) + '"><span class="lbl" style="margin:0">' + esc(f.label) + '</span><div class="opts">' +
+        f.opts.map(o => '<button type="button" class="opt" data-k="' + f.key + '" data-v="' + o[0] + '" aria-pressed="' + (st.prefs[f.key] === o[0]) + '">' + esc(o[1]) + '</button>').join('') + '</div></div>').join('') + '</section>';
+  }
+
+  function render(first, refocus) {
+    const own = st.own;
+    const name = (own.make + ' ' + own.model).trim();
+    const res = N.pickNext(own, E.CARS, urls, { prefs: st.prefs, exclude: st.skip });
+    const bits = [];
+    if (own.year) bits.push(own.year + (res.age != null ? ' (' + res.age + ' years old)' : ''));
+    if (own.fuel) bits.push(own.fuel);
+    if (own.seats) bits.push(own.seats + ' seats');
+    if (own.kw) bits.push(own.kw + ' kW');
+    if (own.range) bits.push('about ' + own.range + ' km electric');
+    let html = '<div class="card own"><div><span class="mono">Your car</span><h2>' + esc(name) + '</h2><p>' + esc(bits.join(' · ')) + (own.listPrice ? ' · list price when new about ' + N.eur(own.listPrice) : '') + '</p></div></div>';
+    html += tuneHtml();
+    if (!res.picks.length) {
+      html += '<div class="callout warn">We do not have a car that fits yours yet.' + (st.skip.length ? ' <button type="button" class="reset" id="reset">Bring back the cars you skipped</button>' : '') + '</div>';
+      $('out').innerHTML = html; return;
+    }
+    html += '<div class="res"><h2>Three steps forward</h2>';
+    if (res.sameNote === 'none') html += '<div class="callout">We do not have a newer car with the same powertrain as yours on file, so none of the three matches it.</div>';
+    if (res.sameNote === 'mild') html += '<div class="callout">The register lists mild hybrids as petrol. The closest newer match to a petrol or diesel car is a mild hybrid, and one of the three is.</div>';
+    if (res.relaxed) html += '<div class="callout warn">None of the cars we hold matches your car\'s size, seats' + (res.capped ? ' or your budget' : '') + ' exactly. These are the closest.</div>';
+    if (st.skip.length) html += '<p class="note" style="margin:0">' + st.skip.length + ' car' + (st.skip.length > 1 ? 's' : '') + ' skipped. <button type="button" class="reset" id="reset">Bring them back</button></p>';
+    const tags = ['Best step forward', 'Strong alternative', 'Wildcard'];
+    res.picks.forEach((s, i) => {
+      const c = s.car, rv = N.REVIEWS[c.id], pl = (c.pc === 'i' ? '≈ ' : '') + N.eur(c.price);
+      const spec = [['From', pl], ['Powertrain', E.PT_LABEL[c.pt] || c.pt], ['Range', c.range ? c.range + ' km' + (c.pt === 'phev' ? ' electric' : '') : '–'], ['Seats', c.seats], ['Euro NCAP', c.ncap ? c.ncap + ' stars' + (c.ncapYr ? ' (' + c.ncapYr + ')' : '') : 'not on file']];
+      const home = N.BRAND_HOME[N.brandKey(c.brand)];
+      const mf = urls[c.id] ? '<a class="link" href="' + esc(urls[c.id]) + '" target="_blank" rel="noopener noreferrer">Manufacturer page<small>Dutch model page</small></a>' : home ? '<a class="link" href="' + esc(home) + '" target="_blank" rel="noopener noreferrer">Manufacturer home page<small>Model page not found</small></a>' : '<span class="link none">Manufacturer page<small>Not on file yet</small></span>';
+      const rvh = rv ? '<a class="link" href="' + esc(rv.url) + '" target="_blank" rel="noopener noreferrer">Independent coverage<small>' + esc(rv.source + (rv.how ? ', ' + rv.how : '')) + '</small></a>' : '<span class="link none">Independent review<small>We do not have one on file</small></span>';
+      const gains = s.gains.length ? '<div class="gh">Measured against your ' + esc(name) + '</div><ul class="gains">' + s.gains.map(g => '<li><b>' + esc(g.k) + '</b><span>' + esc(g.t) + '</span></li>').join('') + '</ul>' : '';
+      html += '<article class="card pick"><div class="top"><span class="rank"><span class="n">' + (i + 1) + '</span>' + tags[i] + '</span>' + (s.same ? '<span class="chip">Same powertrain as yours</span>' : '') + '</div>' +
+        '<div class="bl">' + esc(c.brand) + '</div><h3>' + esc(c.model) + '</h3>' +
+        '<dl class="specs">' + spec.map(x => '<div><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd></div>').join('') + '</dl>' +
+        gains + (s.sidestep ? '<p class="note">On the figures we hold, this is a sidestep rather than a clear step forward from your ' + esc(name) + '. It is here because it fits your car and budget.</p>' : '') +
+        '<ul class="why">' + N.reasons(own, s, name).map(r => '<li>' + esc(r) + '</li>').join('') + '</ul>' +
+        '<div class="foot"><div class="links">' + mf + rvh + '</div><button type="button" class="swap" data-id="' + esc(c.id) + '" aria-label="Not this one: show another instead of ' + esc(c.brand + ' ' + c.model) + '">Not this one</button></div></article>';
+    });
+    html += '<p class="note">Ratings and prices come from our own research; check the manufacturer page for today\'s offer. List prices are not adjusted for inflation. Cars from your own brand are left out on purpose.</p></div>';
+    $('out').innerHTML = html;
+    if (first) $('out').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    if (refocus) { const el = refocus.id ? $('out').querySelector(refocus.id) : $('out').querySelector('.opt[data-k="' + refocus.k + '"][data-v="' + refocus.v + '"]'); if (el) el.focus(); }
+  }
+  function start(own) { st = { own, prefs: {}, skip: [] }; render(true); }
+
+  $('out').addEventListener('click', e => {
+    if (!st) return;
+    const o = e.target.closest('.opt');
+    if (o) { const k = o.dataset.k, v = o.dataset.v; if (st.prefs[k] === v) delete st.prefs[k]; else st.prefs[k] = v; render(false, { k, v }); return; }
+    const sw = e.target.closest('.swap');
+    if (sw) { st.skip.push(sw.dataset.id); render(false, { id: '.swap' }); return; }
+    if (e.target.closest('#reset')) { st.skip = []; render(false, { id: '.swap' }); }
+  });
+
+  $('exs').innerHTML = EXAMPLES.map((x, i) => '<button type="button" class="ex" data-i="' + i + '">' + esc(x.label) + '</button>').join('');
+  $('exs').addEventListener('click', e => {
+    const b = e.target.closest('.ex'); if (!b) return;
+    setMsg(''); start(EXAMPLES[+b.dataset.i].own);
+  });
+
+  const MSGS = {
+    invalid: 'That does not look like a Dutch plate. Enter six letters and digits, for example XX-123-Y.',
+    notfound: 'We could not find that plate in the vehicle register. Check it and try again.',
+    notcar: 'That plate belongs to a vehicle that is not a passenger car, so we cannot suggest a replacement.',
+    error: 'The vehicle register could not be reached. If you are viewing this inside the Claude app, the lookup is blocked there; open the page as its own website, or try an example above.'
+  };
+  $('plateForm').addEventListener('submit', e => {
+    e.preventDefault(); setMsg('');
+    const btn = $('go'); btn.disabled = true; btn.textContent = 'Looking up…';
+    N.loadPlate(E, $('plateIn').value).then(r => {
+      if (r.status !== 'ok') { setMsg(MSGS[r.status] || MSGS.error); return; }
+      start(r.own);
+    }).catch(() => setMsg(MSGS.error)).then(() => { btn.disabled = false; btn.textContent = 'Find my next car'; });
+  });
+
+  $('theme').addEventListener('click', () => {
+    const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark';
+  });
+})();
+</script>

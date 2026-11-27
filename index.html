@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Find My Next Car</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column. Plate field first, then the car we found, then three cards that each carry the two links. */
+:root{--plate:#F2C200;--plate-ink:#10151C;--eu:#1B4DB1;--bg:#F3F5F8;--surface:#FFFFFF;--ink:#10151C;--muted:#586271;--line:#D9DEE6;--blue:#1B4DB1;--blue-soft:#E4ECFA;--warn:#8A4B00;--warn-bg:#FFF1D6;--shadow:0 1px 2px rgba(16,21,28,.06),0 8px 24px rgba(16,21,28,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1117;--surface:#161C25;--ink:#EEF1F5;--muted:#9AA5B4;--line:#2A3340;--blue:#7DA2F0;--blue-soft:#1A2640;--warn:#F0B35A;--warn-bg:#2B2113;--shadow:none;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D1117;--surface:#161C25;--ink:#EEF1F5;--muted:#9AA5B4;--line:#2A3340;--blue:#7DA2F0;--blue-soft:#1A2640;--warn:#F0B35A;--warn-bg:#2B2113;--shadow:none;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 'Public Sans',system-ui,sans-serif;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font:700 22px 'Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.tag{background:var(--plate);color:var(--plate-ink);padding:2px 10px;border-radius:4px;border-left:8px solid var(--blue)}
+button{font:inherit;cursor:pointer;color:inherit}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px;color:var(--muted)}
+.ghost:hover{border-color:var(--ink);color:var(--ink)}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif;text-wrap:balance;margin:0;line-height:1.05}
+.hero h1{font-size:clamp(40px,9vw,68px);font-weight:700;text-transform:uppercase}
+.hero p{color:var(--muted);max-width:54ch;margin:14px 0 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:24px}
+.lbl{display:block;font:600 13px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch}
+.platebox{display:flex;align-items:stretch;background:var(--plate);color:var(--plate-ink);border:2px solid var(--plate-ink);border-radius:8px;overflow:hidden;flex:1 1 220px;max-width:300px;min-width:0}
+.platebox .eu{background:var(--eu);color:#fff;font:600 13px 'IBM Plex Mono',monospace;display:flex;align-items:flex-end;justify-content:center;padding:6px 9px}
+.platebox input{flex:1;min-width:0;width:100%;border:0;background:transparent;color:var(--plate-ink);font:700 28px/1 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:12px;outline:none}
+.platebox input::placeholder{color:rgba(16,21,28,.38);opacity:1}
+.platebox:focus-within{outline:3px solid var(--blue);outline-offset:2px}
+.cta{background:var(--plate);color:var(--plate-ink);border:0;border-radius:10px;padding:14px 22px;font-weight:600;font-size:16px}
+.cta:hover{filter:brightness(.95)}
+.cta:disabled{opacity:.5;cursor:default}
+.cta:focus-visible,.ghost:focus-visible,.ex:focus-visible,.link:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.disc{margin:14px 0 0;font-size:13px;color:var(--muted)}
+.exs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.ex{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px}
+.ex:hover{border-color:var(--blue)}
+.msg{margin-top:14px;border-radius:10px;padding:12px 14px;font-size:14px;background:var(--warn-bg);color:var(--warn)}
+.msg:empty{display:none}
+.own{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+.own h2{font-size:clamp(26px,6vw,34px);font-weight:700;text-transform:uppercase}
+.own p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.mono{font:500 13px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.res{display:flex;flex-direction:column;gap:16px}
+.res>h2{font-size:clamp(28px,6vw,38px);font-weight:600}
+.pick .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.rank{font:700 14px 'Barlow Condensed',sans-serif;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.rank .n{background:var(--plate);color:var(--plate-ink);border-left:6px solid var(--blue);padding:2px 10px;border-radius:3px;font-size:18px}
+.pick h3{font-size:clamp(30px,7vw,42px);font-weight:700;margin-top:10px}
+.pick .bl{font:500 13px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:16px 0 0}
+.specs div{background:var(--surface);padding:10px 12px;min-width:0}
+.specs dt{font:500 11px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.specs dd{margin:2px 0 0;font:500 15px 'IBM Plex Mono',monospace}
+ul.why{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+ul.why li{padding-left:22px;position:relative}
+ul.why li::before{content:"\2713";position:absolute;left:0;color:var(--blue);font-weight:700}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.link{display:inline-flex;flex-direction:column;border:1.5px solid var(--blue);border-radius:10px;padding:10px 14px;color:var(--blue);font-weight:600;text-decoration:none;font-size:15px;min-width:0}
+.link small{font:400 12px 'Public Sans',sans-serif;color:var(--muted)}
+.link:hover{background:var(--blue-soft)}
+.chip{font:500 12px 'IBM Plex Mono',monospace;background:var(--blue-soft);color:var(--blue);border-radius:999px;padding:3px 10px;text-transform:uppercase;letter-spacing:.04em}
+.link.none{border-style:dashed;border-color:var(--line);color:var(--muted);cursor:default}
+.note{color:var(--muted);font-size:14px;margin:12px 0 0}
+.callout{background:var(--blue-soft);border-radius:10px;padding:12px 14px;font-size:14px}
+.callout.warn{background:var(--warn-bg);color:var(--warn)}
+.tune{display:grid;gap:14px}
+.tune h2{font-size:clamp(22px,5vw,28px);font-weight:600}
+.tune p{margin:0;color:var(--muted);font-size:14px}
+.grp{display:grid;gap:6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:14px;color:var(--fg)}
+.opt:hover{border-color:var(--blue)}
+.opt[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.opt:focus-visible,.swap:focus-visible,.reset:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.gains{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gains li{background:var(--surface);padding:9px 12px;display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;font-size:14px}
+.gains li b{font:500 12px 'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.gains .gh{font:500 11px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+.swap,.reset{background:transparent;border:0;color:var(--muted);font-size:14px;text-decoration:underline;padding:4px 2px}
+.swap:hover,.reset:hover{color:var(--blue)}
+.foot{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.foot .links{margin-top:0}
+footer{color:var(--muted);font-size:13px;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:20px}
+footer p{margin:0}
+@media (prefers-reduced-motion:no-preference){.pick{animation:rise .35s ease-out both}.pick:nth-of-type(2){animation-delay:.08s}.pick:nth-of-type(3){animation-delay:.16s}}
+@keyframes rise{from{transform:translateY(8px)}to{transform:none}}
+</style>
+<style>body{margin:0}img{max-width:100%}</style>
+</head><body>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="tag">NL</span> Find my next car</div>
+    <button class="ghost" id="theme" type="button" aria-label="Toggle theme">Theme</button>
+  </header>
+
+  <section class="hero">
+    <h1>See what has changed since you bought your car</h1>
+    <p>Enter your number plate. We read your car from the Dutch vehicle register and show three newer cars that launched in the Netherlands since mid 2025: a real step forward in technology and efficiency, from other brands than yours.</p>
+  </section>
+
+  <section class="card" aria-labelledby="platelbl">
+    <label class="lbl" id="platelbl" for="plateIn">Your number plate</label>
+    <form class="row" id="plateForm" autocomplete="off">
+      <div class="platebox"><span class="eu">NL</span><input id="plateIn" inputmode="text" maxlength="9" placeholder="XX-123-Y" aria-describedby="disc" autocapitalize="characters" spellcheck="false"></div>
+      <button class="cta" id="go" type="submit">Find my next car</button>
+    </form>
+    <p class="disc" id="disc">Your plate is sent only to the RDW's public open data service to look up make, model and fuel. We do not store or log it.</p>
+    <div class="msg" id="msg" role="status"></div>
+    <span class="lbl" style="margin-top:20px">No plate to hand? Try an example</span>
+    <div class="exs" id="exs"></div>
+  </section>
+
+  <div id="out"></div>
+
+  <footer>
+    <p>Find My Next Car is an independent tool, not affiliated with any car brand or the RDW. Prices are Dutch list prices as of November 2026; a leading ≈ means the price is indicative.</p>
+    <p>Coverage links point to independent magazines, motoring clubs and consumer bodies, in Dutch, English or German as noted, never to the manufacturer. Where we have none on file the card says so. YouTube reviews are not included yet.</p>
+  </footer>
+</div>
+
+<script>
+/* The Short List: data + scoring engine. Pure JS, no DOM. */
+(function (root) {
+  'use strict';
+
+  // ---------- DATA ----------
+  // pt: bev | phev | hev | mhev | ice
+  // pc: 'm' = price read on the manufacturer's Dutch page or price list (Nov 2026); 'i' = indicative (press report, old list, other market, or the page did not name the version)
+  // range: WLTP km (entry battery) for bev; electric km for phev
+  // space/comfort/drive/tech: editorial ratings 1-5 (ours, not measured)
+  // nb: brand new to Dutch buyers (arrived in the last ~5 years)
+  function c(id, brand, model, origin, nb, pt, body, size, seats, price, pc, range, ncap, ncapYr, space, comfort, drive, tech, note, flag) {
+    return { id, brand, model, origin, nb, pt, body, size, seats, price, pc, range, ncap, ncapYr, space, comfort, drive, tech, note: note || '', flag: flag || '' };
+  }
+
+  const CARS = [
+    // City and small
+    c('picanto', 'Kia', 'Picanto', 'KR', false, 'ice', 'city', 1, 5, 20995, 'm', null, null, null, 1, 2, 3, 2, '10-year / 150,000 km warranty. Euro NCAP tested the previous generation in 2017.'),
+    c('aygox', 'Toyota', 'Aygo X', 'JP', false, 'hev', 'city', 1, 4, 23750, 'm', null, 4, 2022, 1, 2, 3, 2, 'Hybrid and automatic as standard from 2026.'),
+    c('sandero', 'Dacia', 'Sandero Eco-G 120', 'EU', false, 'ice', 'hatch', 2, 5, 21600, 'm', null, 2, 2021, 3, 2, 2, 1, 'Runs on petrol and LPG. The 2-star rating is for the Stepway version it shares a base with.'),
+    c('swift', 'Suzuki', 'Swift', 'JP', false, 'mhev', 'hatch', 2, 5, 23199, 'm', null, 3, 2024, 2, 3, 4, 2, 'Mild hybrid. Euro NCAP gave the 2024 car 3 stars. Suzuki NL shows €20,999 including a €2,200 temporary discount until 15 December 2026.'),
+    c('clio', 'Renault', 'Clio full hybrid', 'EU', false, 'hev', 'hatch', 2, 5, 28990, 'm', null, null, null, 3, 3, 4, 3, 'New generation with a full-hybrid option.'),
+    c('yaris', 'Toyota', 'Yaris Hybrid', 'JP', false, 'hev', 'hatch', 2, 5, 27195, 'm', null, 5, 2020, 2, 3, 3, 3, 'Hybrid and automatic. ANWB points to its resale value.'),
+    c('mazda2', 'Mazda', '2 Hybrid', 'JP', false, 'hev', 'hatch', 2, 5, 27990, 'i', null, null, null, 2, 3, 3, 2, 'Toyota Yaris-based hybrid, refreshed in 2026.'),
+    c('mg3', 'MG', '3 Hybrid+', 'CN', false, 'hev', 'hatch', 2, 5, 23750, 'm', null, 4, 2025, 2, 2, 3, 3, 'Chinese-owned, established in NL. MG NL shows €23,250 with a €500 offer until 31 December 2026.', 'Euro NCAP rated it 4 stars but flagged a driver-seat latch failure in its crash test; MG said it is investigating.'),
+    c('yariscross', 'Toyota', 'Yaris Cross', 'JP', false, 'hev', 'suv', 2, 5, 31695, 'm', null, 5, 2021, 3, 3, 3, 3, 'Hybrid with a high seating position.'),
+    c('puma', 'Ford', 'Puma mild hybrid', 'EU', false, 'mhev', 'suv', 2, 5, 28995, 'm', null, null, null, 3, 3, 4, 3, 'Ford sales in NL are down sharply in 2026.'),
+    c('mgzs', 'MG', 'ZS Hybrid+', 'CN', false, 'hev', 'suv', 3, 5, 27500, 'i', null, null, null, 4, 3, 2, 3, 'Chinese-owned, established in NL.'),
+    c('duster', 'Dacia', 'Duster Eco-G 120', 'EU', false, 'ice', 'suv', 3, 5, 27500, 'm', null, 3, 2024, 4, 3, 2, 2, 'Runs on petrol and LPG. Dacia’s Hybrid 140 costs more. Euro NCAP 3 stars (2024).'),
+    c('jogger', 'Dacia', 'Jogger Eco-G 120', 'EU', false, 'ice', 'mpv', 3, 7, 25200, 'i', null, 1, 2022, 5, 2, 2, 1, 'Seven seats for small-hatchback money. Runs on petrol and LPG. Euro NCAP gave the Jogger 1 star.'),
+
+    // Small and compact EV
+    c('spring', 'Dacia', 'Spring', 'EU', false, 'bev', 'city', 1, 4, 19500, 'm', 225, 1, 2021, 1, 1, 1, 1, 'Cheapest EV on our list. Dacia quotes up to 250 km. Euro NCAP 1 star (2021).'),
+    c('t03', 'Leapmotor', 'T03', 'CN', true, 'bev', 'city', 1, 4, 20250, 'm', 265, null, null, 1, 2, 2, 3, 'Four seats, 210 L boot, rear bench does not split.'),
+    c('twingo', 'Renault', 'Twingo E-Tech', 'EU', false, 'bev', 'city', 1, 4, 20990, 'm', 263, null, null, 1, 3, 3, 3, 'Four-seat city EV.'),
+    c('dolphinsurf', 'BYD', 'Dolphin Surf', 'CN', true, 'bev', 'city', 1, 4, 22990, 'm', 220, 5, 2025, 1, 3, 2, 3, 'Entry battery about 220 km; the 43.2 kWh battery reaches about 320 km from €24,990.'),
+    c('ec3', 'Citroën', 'ë-C3', 'EU', false, 'bev', 'hatch', 2, 5, 20990, 'm', 212, null, null, 3, 4, 2, 2, 'Entry battery about 212 km; larger battery up to 320 km at a higher price.'),
+    c('inster', 'Hyundai', 'Inster', 'KR', false, 'bev', 'city', 1, 4, 22995, 'm', 327, null, null, 2, 3, 3, 3, 'Up to 370 km with the larger battery. Hyundai’s current offer runs until 31 December 2026.'),
+    c('pandaev', 'Fiat', 'Grande Panda Electric', 'EU', false, 'bev', 'hatch', 2, 5, 25990, 'i', 320, null, null, 3, 3, 2, 2, '44 kWh battery, 361 L boot. Fiat NL shows €23,999 only after a trade-in premium.'),
+    c('b05', 'Leapmotor', 'B05', 'CN', true, 'bev', 'hatch', 3, 5, 26995, 'm', 401, 5, 2026, 3, 3, 3, 4, 'Euro NCAP 5 stars under the stricter 2026 protocol. In showrooms since July.'),
+    c('r5', 'Renault', '5 E-Tech', 'EU', false, 'bev', 'hatch', 2, 5, 24990, 'm', 312, 4, 2024, 2, 3, 4, 3, 'The 52 kWh battery gives up to 430 km at a higher price.'),
+    c('ioniq3', 'Hyundai', 'Ioniq 3', 'KR', false, 'bev', 'hatch', 3, 5, 27995, 'm', 344, null, null, 3, 3, 3, 4, 'New: deliveries from autumn 2026. Larger battery up to 497 km. Hyundai NL shows €27,245 including up to €750 of temporary benefit.'),
+    c('r4', 'Renault', '4 E-Tech', 'EU', false, 'bev', 'suv', 2, 5, 29490, 'm', 308, null, null, 3, 3, 3, 3, 'Small electric crossover, larger battery up to 415 km.'),
+    c('mg4', 'MG', '4 Electric', 'CN', false, 'bev', 'hatch', 3, 5, 33950, 'i', 350, 5, 2022, 3, 3, 4, 3, 'Euro NCAP 5 stars (2022). The cheaper MG4 Urban is a separate model.'),
+    c('atto2', 'BYD', 'Atto 2', 'CN', true, 'bev', 'suv', 2, 5, 34490, 'm', 430, null, null, 3, 3, 3, 4, 'Euro NCAP result not yet published. BYD’s page lists one electric trim, the EV Business with the 64.8 kWh battery; a €2,000 discount to 31 December is left out.'),
+    c('b10', 'Leapmotor', 'B10', 'CN', true, 'bev', 'suv', 3, 5, 29495, 'm', 361, 5, 2025, 4, 3, 3, 4, 'Euro NCAP 5 stars with 93% for adult and child protection.'),
+
+    // Mid-size EV
+    c('elroq', 'Škoda', 'Elroq', 'EU', false, 'bev', 'suv', 3, 5, 38490, 'm', 449, 5, 2025, 4, 4, 3, 4, "The Netherlands' best-selling new car in 2025 (ANWB). Škoda’s model page shows ‘from €34,990’ without naming a version."),
+    c('ev3', 'Kia', 'EV3', 'KR', false, 'bev', 'suv', 3, 5, 36995, 'm', 436, 5, 2025, 3, 4, 3, 4, 'Second best-seller of 2025. Euro NCAP 5 stars.'),
+    c('ex30', 'Volvo', 'EX30', 'EU', false, 'bev', 'suv', 2, 5, 32995, 'm', 337, 5, 2024, 2, 3, 4, 4, 'Swedish brand, owned by Geely. Euro NCAP 5 stars.'),
+    c('kona', 'Hyundai', 'Kona Electric', 'KR', false, 'bev', 'suv', 3, 5, 33995, 'm', 380, null, null, 3, 4, 3, 4, 'Up to 510 km with the larger battery.'),
+    c('modely', 'Tesla', 'Model Y', 'US', false, 'bev', 'suv', 3, 5, 39990, 'i', 516, 5, 2022, 4, 3, 4, 5, "The Netherlands' best-selling model so far in 2026."),
+    c('model3', 'Tesla', 'Model 3', 'US', false, 'bev', 'sedan', 3, 5, 36995, 'i', 534, 5, 2019, 3, 3, 4, 5, 'Euro NCAP 5 stars.'),
+    c('c10', 'Leapmotor', 'C10', 'CN', true, 'bev', 'suv', 4, 5, 40495, 'm', 420, 5, 2024, 4, 4, 3, 4, 'Euro NCAP 5 stars.'),
+    c('g6', 'Xpeng', 'G6', 'CN', true, 'bev', 'suv', 4, 5, 42677, 'i', 435, null, null, 4, 4, 3, 5, 'Xpeng’s own Dutch site could not be read, so the price comes from a price table.'),
+    c('sealion7', 'BYD', 'Sealion 7', 'CN', true, 'bev', 'suv', 4, 5, 50690, 'm', 482, 5, 2025, 4, 4, 4, 4, 'Euro NCAP 5 stars (2025).'),
+    c('ix3', 'BMW', 'iX3 (Neue Klasse)', 'EU', false, 'bev', 'suv', 4, 5, 69000, 'i', 805, 5, 2026, 4, 5, 5, 5, 'BMW NL shows no cash price on the model page. The German list price is €68,900. Orders far outran production early on.'),
+    c('tang', 'BYD', 'Tang', 'CN', true, 'bev', 'suv', 5, 7, 67400, 'm', 530, null, null, 5, 4, 3, 4, 'Seven-seat electric SUV.'),
+
+    // Plug-in and range extender
+    c('sealu', 'BYD', 'Seal U DM-i', 'CN', true, 'phev', 'suv', 4, 5, 39620, 'm', 80, 5, 2023, 4, 4, 2, 4, 'Plug-in hybrid. BYD quotes 80 km electric and about 1,080 km in total.'),
+    c('c10r', 'Leapmotor', 'C10 Hybrid EV', 'CN', true, 'phev', 'suv', 4, 5, 40495, 'm', 145, 5, 2024, 4, 4, 3, 4, 'Range extender: about 145 km electric, about 970 km in total.'),
+    c('lynk01', 'Lynk & Co', '01', 'CN', true, 'phev', 'suv', 4, 5, 47145, 'm', 75, null, null, 3, 4, 4, 4, 'Plug-in hybrid, up to 75 km electric.'),
+    c('tiguan', 'Volkswagen', 'Tiguan plug-in hybrid', 'EU', false, 'phev', 'suv', 4, 5, 47990, 'i', 122, null, null, 4, 4, 3, 4, 'VW advertises up to 122 km electric range in NL.'),
+
+    // Hybrids, mild hybrids and estates
+    c('troc', 'Volkswagen', 'T-Roc hybrid', 'EU', false, 'mhev', 'suv', 3, 5, 36990, 'm', null, null, null, 3, 4, 4, 3, 'New generation.'),
+    c('golf', 'Volkswagen', 'Golf 1.5 TSI', 'EU', false, 'ice', 'hatch', 3, 5, 37990, 'm', null, 5, 2019, 3, 4, 4, 3, 'Petrol. Mild-hybrid and plug-in versions cost more (plug-in from €40,990, 142 km electric). Euro NCAP 5 stars (2019 protocol).'),
+    c('corolla', 'Toyota', 'Corolla Touring Sports Hybrid', 'JP', false, 'hev', 'estate', 3, 5, 35495, 'm', null, 5, 2019, 4, 4, 3, 3, 'Hybrid estate.'),
+    c('chr', 'Toyota', 'C-HR Hybrid', 'JP', false, 'hev', 'suv', 3, 5, 36495, 'm', null, null, null, 2, 3, 4, 3, 'Hybrid with a low roofline; modest rear space.'),
+    c('niro', 'Kia', 'Niro Hybrid', 'KR', false, 'hev', 'suv', 3, 5, 36195, 'm', null, null, null, 3, 4, 2, 3, 'Hybrid only now; the Niro EV was replaced by the EV3 (ANWB).'),
+    c('tucson', 'Hyundai', 'Tucson Hybrid', 'KR', false, 'hev', 'suv', 4, 5, 41995, 'm', null, null, null, 4, 4, 3, 4, 'Hybrid family SUV.'),
+    c('octavia', 'Škoda', 'Octavia Combi mild hybrid', 'EU', false, 'mhev', 'estate', 4, 5, 36990, 'i', null, 5, 2019, 5, 4, 3, 3, 'Very large boot for its price.'),
+    c('kodiaq', 'Škoda', 'Kodiaq mild hybrid', 'EU', false, 'mhev', 'suv', 5, 7, 44990, 'i', null, 5, 2024, 5, 4, 3, 4, 'Seven-seat option. Euro NCAP 5 stars (2024).'),
+    c('rav4', 'Toyota', 'RAV4 Plug-in Hybrid', 'JP', false, 'phev', 'suv', 4, 5, 49995, 'm', 137, null, null, 4, 4, 3, 4, 'Only sold as a plug-in hybrid in the Netherlands. Toyota quotes up to 137 km electric.'),
+
+    // Added November 2026: the best-selling models that were missing (2026 registrations of 1,500 or more)
+    c('ev2', 'Kia', 'EV2', 'KR', false, 'bev', 'suv', 2, 5, 27595, 'm', 312, null, null, 2, 3, 3, 4, 'Small electric crossover. The 61 kWh battery reaches up to 453 km from €33,595.'),
+    c('ev5', 'Kia', 'EV5', 'KR', false, 'bev', 'suv', 4, 5, 44495, 'i', 530, 5, 2025, 4, 4, 3, 4, 'Kia’s list is from September 2025, so the price may have moved.'),
+    c('stonic', 'Kia', 'Stonic', 'KR', false, 'mhev', 'suv', 2, 5, 28295, 'm', null, 5, 2017, 2, 3, 3, 3, 'Mild hybrid, 115 hp, manual. The automatic costs €1,500 more.'),
+    c('sportage', 'Kia', 'Sportage Hybrid', 'KR', false, 'hev', 'suv', 4, 5, 43495, 'm', null, 5, 2022, 4, 4, 3, 4, 'Full hybrid, 239 hp. The plug-in version (67 km electric) has the same entry price.'),
+    c('p208', 'Peugeot', '208', 'EU', false, 'ice', 'hatch', 2, 5, 28520, 'i', null, 4, 2019, 2, 3, 4, 3, 'Cheapest 208 on Peugeot’s list; we read it as the 1.2 turbo petrol. A 48-volt hybrid and the electric E-208 (about 360 km) cost more.'),
+    c('p2008', 'Peugeot', '2008 Hybrid 145', 'EU', false, 'mhev', 'suv', 2, 5, 36940, 'i', null, 5, 2019, 3, 3, 3, 3, '48-volt mild hybrid with automatic. The same July 2025 list shows the electric E-2008 at €36,700.'),
+    c('p3008', 'Peugeot', '3008 Hybrid 145', 'EU', false, 'mhev', 'suv', 4, 5, 43870, 'i', null, null, null, 4, 4, 3, 4, '48-volt mild hybrid with automatic. Peugeot also sells a plug-in hybrid and the electric E-3008.'),
+    c('corsa', 'Opel', 'Corsa Hybrid', 'EU', false, 'mhev', 'hatch', 2, 5, 26999, 'i', null, null, null, 2, 3, 3, 2, '48-volt mild hybrid with automatic. On the same basis the petrol Corsa is €2,000 cheaper and the electric Corsa (50 kWh, about 355 km) €3,000 dearer.'),
+    c('frontera', 'Opel', 'Frontera Hybrid', 'EU', false, 'mhev', 'suv', 3, 5, 31499, 'i', null, null, null, 4, 3, 2, 2, '48-volt mild hybrid with automatic. On the same basis the electric Frontera (44 kWh, about 305 km) is €500 cheaper.'),
+    c('captur', 'Renault', 'Captur full hybrid', 'EU', false, 'hev', 'suv', 2, 5, 33790, 'm', null, null, null, 3, 3, 3, 3, 'Full hybrid E-Tech 160 with automatic. The petrol TCe 115 starts at €31,990.'),
+    c('symbioz', 'Renault', 'Symbioz full hybrid', 'EU', false, 'hev', 'suv', 3, 5, 36290, 'm', null, null, null, 4, 4, 3, 3, 'Full hybrid E-Tech 160 with automatic. Roomier than the Captur.'),
+    c('ibiza', 'Seat', 'Ibiza', 'EU', false, 'ice', 'hatch', 2, 5, 24990, 'm', null, 5, 2017, 2, 3, 3, 2, 'Petrol 1.0, 95 hp, manual. The 115 hp automatic starts at €30,990.'),
+    c('polo', 'Volkswagen', 'Polo', 'EU', false, 'ice', 'hatch', 2, 5, 26990, 'm', null, 5, 2017, 2, 3, 3, 3, 'Petrol 1.0, 80 hp, manual.'),
+    c('id3', 'Volkswagen', 'ID.3 Neo', 'EU', false, 'bev', 'hatch', 3, 5, 32990, 'm', 416, 5, null, 3, 3, 4, 4, 'The 5-star Euro NCAP result is for the original ID.3. The 79 kWh version reaches up to 629 km from €39,990.'),
+    c('id4', 'Volkswagen', 'ID.4', 'EU', false, 'bev', 'suv', 4, 5, 39990, 'm', 426, 5, 2021, 4, 4, 3, 4, 'The 77 kWh Pro reaches up to 563 km from €44,990.'),
+    c('id7', 'Volkswagen', 'ID.7', 'EU', false, 'bev', 'sedan', 4, 5, 43990, 'm', 474, 5, 2023, 4, 5, 3, 4, 'Large electric saloon with a hatchback boot. The 77 kWh version reaches up to 599 km from €48,990. The Tourer is the estate.'),
+    c('tayron', 'Volkswagen', 'Tayron eHybrid', 'EU', false, 'phev', 'suv', 5, 5, 52490, 'i', 126, 5, 2025, 5, 4, 3, 4, 'Plug-in hybrid, 204 hp, five seats. VW does not offer the third row with the plug-in; for seven seats see the mild-hybrid Tayron. VW’s price list is from November 2024.'),
+    c('tayron7', 'Volkswagen', 'Tayron 7-seater', 'EU', false, 'mhev', 'suv', 5, 7, 58380, 'i', null, 5, 2025, 5, 4, 3, 4, 'Mild hybrid, 150 hp, automatic. Five seats as standard; the third row is a €890 option. VW’s list gives no seven-seat total, so we add the two and you should confirm it with a dealer.'),
+    c('raval', 'Cupra', 'Raval', 'EU', false, 'bev', 'hatch', 2, 5, 25990, 'm', 329, 5, 2026, 2, 3, 4, 4, 'The 52 kWh battery reaches up to 445 km from €32,990.'),
+    c('enyaq', 'Škoda', 'Enyaq 60', 'EU', false, 'bev', 'suv', 4, 5, 42990, 'm', 453, 5, 2021, 5, 4, 3, 4, 'Large electric SUV. Škoda marks the range as preliminary.'),
+    c('chrplus', 'Toyota', 'C-HR+', 'JP', false, 'bev', 'suv', 3, 5, 37995, 'm', 458, null, null, 3, 3, 3, 3, 'Electric crossover. The 77 kWh version reaches up to 607 km from €43,995.'),
+    c('q4', 'Audi', 'Q4 e-tron', 'EU', false, 'bev', 'suv', 4, 5, 45990, 'm', 410, 5, 2021, 4, 4, 3, 5, 'Entry version after the 2026 update. Our range figure is for the previous Q4 40 e-tron with the same 59 kWh battery; Audi quotes up to 592 km for bigger-battery versions.'),
+    c('a3', 'Audi', 'A3 Sportback', 'EU', false, 'ice', 'hatch', 3, 5, 39990, 'i', null, 5, 2020, 3, 4, 4, 4, 'Petrol. Audi’s ‘from’ price does not name the version.'),
+    c('q3', 'Audi', 'Q3 e-hybrid', 'EU', false, 'phev', 'suv', 3, 5, 53990, 'm', 118, null, null, 3, 4, 3, 5, 'Plug-in hybrid, 204 hp, 25.7 kWh battery. Audi marks the range as provisional.'),
+    c('cla', 'Mercedes-Benz', 'CLA 180', 'EU', false, 'mhev', 'sedan', 3, 5, 47580, 'i', null, 5, 2025, 2, 4, 4, 5, '48-volt mild hybrid, 136 hp, automatic. The 5 stars from Euro NCAP (2025) were awarded to the electric CLA, which shares the body.'),
+    c('minicooper', 'Mini', 'Cooper E', 'EU', false, 'bev', 'hatch', 2, 4, 30360, 'i', 305, null, null, 1, 3, 5, 3, 'Four seats, small boot. Euro NCAP tested it in 2025: adults 89%, children 87%.'),
+    c('xc40', 'Volvo', 'XC40 mild hybrid', 'EU', false, 'mhev', 'suv', 3, 5, 50995, 'm', null, 5, 2018, 3, 4, 3, 4, 'Swedish brand, owned by Geely. The electric version is now called EX40.'),
+    c('v60', 'Volvo', 'V60 mild hybrid', 'EU', false, 'mhev', 'estate', 4, 5, 48695, 'm', null, 5, 2018, 4, 4, 3, 4, 'Mild-hybrid estate.'),
+    c('xc60', 'Volvo', 'XC60 mild hybrid', 'EU', false, 'mhev', 'suv', 4, 5, 56090, 'm', null, 5, 2017, 4, 5, 3, 4, 'Large family SUV.'),
+    c('kuga', 'Ford', 'Kuga plug-in hybrid', 'EU', false, 'phev', 'suv', 4, 5, 43490, 'i', 60, 5, 2019, 4, 4, 3, 3, 'Plug-in hybrid with 60 to 69 km electric range. Ford’s list is from January 2025.'),
+    c('qashqai', 'Nissan', 'Qashqai e-Power', 'JP', false, 'hev', 'suv', 3, 5, 39440, 'i', null, 5, 2021, 3, 4, 3, 3, 'A hybrid you never plug in: the petrol engine charges the battery and the electric motor drives the wheels.'),
+    c('ix1', 'BMW', 'iX1 eDrive20', 'EU', false, 'bev', 'suv', 3, 5, 46405, 'm', 430, null, null, 3, 4, 4, 5, 'BMW quotes 416 to 474 km across the iX1 range. The Pure Edition includes the xLine package and the Premium Pack.'),
+    c('i5', 'BMW', '5 Series (i5 eDrive40)', 'EU', false, 'bev', 'sedan', 4, 5, 68699, 'i', 520, null, null, 4, 5, 5, 5, 'BMW quotes 463 to 582 km for the eDrive40. Its page also shows a temporary ‘from’ price of €69,532; we use the lower one.'),
+    // Chinese brands that began selling new cars in the Netherlands since mid-2025
+    c('omoda5hev', 'Omoda', '5 SHS-H', 'CN', true, 'hev', 'suv', 3, 5, 28990, 'i', null, 5, 2022, 3, 3, 3, 4, 'Full hybrid, automatic. Omoda arrived in the Netherlands in 2025. Euro NCAP 5 stars (2022).'),
+    c('omoda5ev', 'Omoda', '5 EV', 'CN', true, 'bev', 'suv', 3, 5, 29990, 'i', 402, 5, 2024, 3, 3, 3, 4, 'Electric compact SUV, about 402 km WLTP. Euro NCAP 5 stars (2024).'),
+    c('omoda9', 'Omoda', '9 SHS', 'CN', true, 'phev', 'suv', 4, 5, 52900, 'i', 145, 5, 2025, 4, 4, 3, 4, 'Omoda’s flagship: a large plug-in hybrid SUV with about 145 km electric range. Euro NCAP 5 stars (2025).'),
+    c('jaecoo5', 'Jaecoo', '5 EV', 'CN', true, 'bev', 'suv', 3, 5, 32990, 'i', 402, null, null, 3, 3, 3, 3, 'Compact electric SUV, about 402 km WLTP. The price comes from a dealer’s copy of the Dutch price list.'),
+    c('jaecoo7', 'Jaecoo', '7 SHS', 'CN', true, 'phev', 'suv', 4, 5, 37900, 'i', 90, 5, 2025, 4, 4, 3, 4, 'Plug-in hybrid with about 90 km electric range. Euro NCAP 5 stars (2025). Dealer ads show the Exclusive trim at €42,640; our price is the entry version.'),
+    c('jaecoo8', 'Jaecoo', '8 SHS-P', 'CN', true, 'phev', 'suv', 4, 5, 53990, 'i', 135, null, null, 4, 4, 3, 4, 'Large plug-in hybrid SUV, about 135 km electric. Five seats; the seven-seat version is listed separately.'),
+    c('jaecoo8s7', 'Jaecoo', '8 SHS-P 7-seater', 'CN', true, 'phev', 'suv', 5, 7, 55990, 'i', 135, null, null, 5, 4, 3, 4, 'Seven-seat version of the 8 SHS-P plug-in hybrid, about 135 km electric.'),
+    c('s05', 'Changan', 'Deepal S05', 'CN', true, 'bev', 'suv', 4, 5, 38990, 'm', 485, 5, 2025, 4, 4, 3, 4, 'Changan sells its electric Deepal range in the Netherlands from 2026. The price is from Changan’s Dutch price list of 1 January 2026.'),
+    c('s07', 'Changan', 'Deepal S07', 'CN', true, 'bev', 'suv', 4, 5, 45990, 'm', 475, 5, 2024, 4, 4, 4, 4, 'Larger electric SUV from Changan’s Deepal range. The price is from Changan’s Dutch price list of 1 January 2026.'),
+    c('e2', 'Geely', 'E2', 'CN', true, 'bev', 'hatch', 2, 5, 22990, 'i', 252, null, null, 2, 3, 3, 3, 'Small electric hatchback. Geely’s early-bird offer is €20,990. Geely began selling in the Netherlands in 2026.'),
+    c('e5', 'Geely', 'E5', 'CN', true, 'bev', 'suv', 4, 5, 37990, 'i', 430, 5, 2025, 4, 4, 3, 4, 'Electric SUV, entry Pro version. The Pro+ costs €39,990 and the Max €41,990.'),
+    c('starray', 'Geely', 'Starray EM-i', 'CN', true, 'phev', 'suv', 4, 5, 34990, 'i', 83, 5, 2025, 4, 4, 3, 4, 'Plug-in hybrid SUV. The Pro+ costs €36,990 and reaches about 136 km electric.'),
+    c('tiggo4', 'Chery', 'Tiggo 4 hybrid', 'CN', true, 'hev', 'suv', 3, 5, 29990, 'i', null, null, null, 3, 3, 3, 3, 'Full hybrid, 163 hp. Chery started selling in the Netherlands in 2026. The price is a dealer’s ‘from’ price (August 2026).'),
+    c('tiggo7', 'Chery', 'Tiggo 7 plug-in hybrid', 'CN', true, 'phev', 'suv', 4, 5, 34490, 'i', 90, 5, 2025, 4, 4, 3, 4, '279 hp plug-in hybrid, about 90 km electric. Dealers show ‘from €34,490’ (August 2026); AutoReview lists the Luxury trim at €33,390 (undated).'),
+    c('tiggo8', 'Chery', 'Tiggo 8 plug-in hybrid', 'CN', true, 'phev', 'suv', 5, 7, 40990, 'i', 90, 5, 2025, 5, 4, 3, 4, 'Seven-seat plug-in hybrid SUV. Dealers show ‘from €40,990’ (August 2026).'),
+    // Newer models (launched since mid-2025) from established Chinese brands
+    c('atto2dmi', 'BYD', 'Atto 2 DM-i', 'CN', true, 'phev', 'suv', 2, 5, 29490, 'm', 40, null, null, 3, 3, 3, 4, 'Plug-in hybrid. The Active has a 7.8 kWh battery and about 40 km electric range; the Boost (€32,490) has 18 kWh and about 90 km. BYD’s €1,500 discount to 31 December is left out.'),
+    c('dolphing', 'BYD', 'Dolphin G DM-i', 'CN', true, 'phev', 'hatch', 2, 5, 24990, 'm', 40, null, null, 2, 3, 3, 3, 'Plug-in hybrid hatchback, on sale since mid-2026. The Active has about 40 km electric range; the Boost (€27,490) and up have an 18.3 kWh battery and about 105 km. BYD’s €1,000 discount to 31 December is left out.'),
+    c('atto3evo', 'BYD', 'Atto 3 Evo', 'CN', true, 'bev', 'suv', 3, 5, 40990, 'm', 510, null, null, 3, 4, 3, 4, 'Electric SUV with a 74.8 kWh battery, 510 km WLTP (rear-wheel drive Design). The all-wheel-drive Excellence costs €43,990 and reaches 470 km. BYD’s €3,000 discount to 31 December is left out.'),
+    c('seal6', 'BYD', 'Seal 6 DM-i', 'CN', true, 'phev', 'sedan', 4, 5, 37990, 'm', 55, 5, 2025, 4, 4, 3, 4, 'Plug-in hybrid saloon. The Boost has up to 55 km electric range; the Comfort (€44,000) up to 105 km. Euro NCAP gave the Seal 6 DM-i and its Touring 5 stars (December 2025).'),
+    c('seal6t', 'BYD', 'Seal 6 DM-i Touring', 'CN', true, 'phev', 'estate', 4, 5, 39000, 'm', 50, 5, 2025, 4, 4, 3, 4, 'Plug-in hybrid estate. The Boost has up to 50 km electric range; the Comfort (€45,010) up to 100 km. BYD’s €4,000 discount to 31 December is left out. BYD’s page gives two different boot sizes, so check it.'),
+    c('mgs5', 'MG', 'MGS5 EV', 'CN', false, 'bev', 'suv', 3, 5, 33850, 'i', 340, null, null, 4, 3, 3, 3, 'Comfort with the 49 kWh battery. The long-range Comfort costs €36,850. The list is from June 2025; Van Mossel’s current page shows €31,850, so ask a dealer what applies today.'),
+    c('mgs6', 'MG', 'MGS6 EV', 'CN', false, 'bev', 'suv', 4, 5, 45750, 'i', 530, null, null, 4, 4, 3, 4, 'In showrooms since February 2026. Luxury Long Range with a 77 kWh battery; the Luxury Dual Motor (all-wheel drive, 485 km) costs €48,750. Van Mossel’s page shows €43,750, so ask a dealer what applies today.'),
+    c('mgs9', 'MG', 'MGS9 plug-in hybrid', 'CN', false, 'phev', 'suv', 5, 7, 45250, 'i', 100, null, null, 5, 3, 2, 3, 'MG’s first large seven-seater, on sale since April 2026; the third row is tight for adults. Plug-in hybrid only. MG offered €2,000 off at launch; we use the list price.'),
+    c('im5', 'MG', 'IM5', 'CN', false, 'bev', 'sedan', 4, 5, 48799, 'i', 490, null, null, 4, 4, 4, 5, 'Electric saloon with 800-volt charging. The Standard Range has a 75 kWh battery; the Long Range (100 kWh, 710 km) costs €55,799. Prices announced in September 2026.'),
+    c('im6', 'MG', 'IM6', 'CN', false, 'bev', 'suv', 4, 5, 51799, 'i', 450, null, null, 4, 4, 4, 5, 'Electric SUV with 800-volt charging. The Standard Range has a 75 kWh battery; the Long Range (625 km) costs €58,799. Prices announced in September 2026.'),
+    c('mghs', 'MG', 'HS Hybrid+', 'CN', false, 'hev', 'suv', 4, 5, 36950, 'i', null, null, null, 4, 3, 2, 3, 'Full hybrid, 225 hp, added to the HS range in July 2025. AutoReview lists the Comfort at €36,224, so prices differ by source.'),
+    c('mg4urban', 'MG', '4 Electric Urban', 'CN', false, 'bev', 'hatch', 3, 5, 25450, 'i', 325, null, null, 3, 3, 4, 3, 'Cheaper version of the MG4 with a 43 kWh battery; the 54 kWh Comfort reaches 416 km from €28,450. Price read on Van Mossel’s MG page, which carries no date.'),
+    c('b03x', 'Leapmotor', 'B03X', 'CN', true, 'bev', 'suv', 2, 5, 24495, 'm', 292, null, null, 2, 2, 3, 3, 'Small electric crossover, orderable since summer 2026. The Pro has a 39.8 kWh battery; the ProMax (53 kWh, 382 km) starts at €26,995. Leapmotor’s July press release gave €23,995 for the Pro Life. Its page does not state the seat count; we assume five.'),
+    c('b10r', 'Leapmotor', 'B10 Hybrid EV', 'CN', true, 'phev', 'suv', 3, 5, 30495, 'm', 84, 5, 2025, 4, 3, 3, 4, 'Range extender: about 84 km electric and about 900 km in total. Leapmotor’s page cites a 5-star Euro NCAP rating for the B10.'),
+    c('p7plus', 'Xpeng', 'P7+', 'CN', true, 'bev', 'sedan', 4, 5, 48990, 'i', 530, null, null, 4, 4, 4, 5, 'Large electric saloon, first deliveries April 2026. EV Update reported €48,990 at launch; one Dutch Xpeng dealer page shows both €46,990 and €49,990.'),
+    c('zeekr7x', 'Zeekr', '7X', 'CN', true, 'bev', 'suv', 4, 5, 49990, 'm', 480, 5, null, 4, 4, 4, 5, 'Business Edition. The Long Range Business Limited Edition (100 kWh, up to 615 km) costs €54,990. Zeekr does not state the Business Edition’s range; 480 km is a press figure. Orders opened in December 2024; deliveries began in 2025.'),
+    c('zeekr7gt', 'Zeekr', '7GT', 'CN', true, 'bev', 'estate', 4, 5, 45990, 'i', 519, null, null, 4, 4, 4, 5, 'Electric shooting-brake estate, orderable since 22 June 2026. Business Edition RWD with a 75 kWh battery; the Long Range (100 kWh, up to 655 km) costs €50,990. Zeekr’s June launch offers are left out.'),
+    c('lynk08', 'Lynk & Co', '08', 'CN', true, 'phev', 'suv', 4, 5, 49990, 'i', 200, null, null, 4, 4, 3, 4, 'Plug-in hybrid with an unusually long 200 km electric range (WLTP). Business Edition; the Core costs €55,995 and the More €59,995. European sales began in June 2025.'),
+    // New models and new generations launched since mid-2025 from the other brands
+    c('ev4', 'Kia', 'EV4', 'KR', false, 'bev', 'hatch', 3, 5, 37695, 'i', 440, 5, 2025, 3, 4, 3, 4, 'Air with the 58.3 kWh battery. The 81.4 kWh battery reaches up to 625 km from €41,195. Kia’s list includes btw, bpm and delivery costs. On sale in the Netherlands since summer 2025.'),
+    c('k4', 'Kia', 'K4', 'KR', false, 'mhev', 'hatch', 3, 5, 33995, 'i', null, null, null, 3, 3, 3, 4, 'Air with a 1.0 turbo mild hybrid, 115 hp. The Sportswagon (estate) costs €1,500 more. A full hybrid follows from December 2026. First cars arrived in April 2026.'),
+    c('seltos', 'Kia', 'Seltos', 'KR', false, 'hev', 'suv', 3, 5, 44495, 'i', null, null, null, 3, 3, 3, 4, 'Hybrid X-Line, 154 hp, front-wheel drive. First hybrid deliveries from mid-November 2026. AutoReview also lists an Air at about €39,000, but Autozine says that version arrives in 2027.'),
+    c('ioniq9', 'Hyundai', 'Ioniq 9', 'KR', false, 'bev', 'suv', 5, 7, 67995, 'i', 620, 5, 2025, 5, 5, 3, 5, 'Seven-seat electric SUV with a 110.3 kWh battery. Style with rear-wheel drive; all-wheel drive starts at €71,995. Hyundai’s list is dated June 2025. Euro NCAP 5 stars (2025).'),
+    c('epiq', 'Škoda', 'Epiq', 'EU', false, 'bev', 'suv', 2, 5, 26990, 'i', 315, null, null, 3, 3, 3, 3, 'Small electric SUV. The Essence 35 is expected to reach about 315 km; the 55 with the larger battery reaches 436 km from €31,990. First cars arrived from September 2026.'),
+    c('idpolo', 'Volkswagen', 'ID. Polo', 'EU', false, 'bev', 'hatch', 2, 5, 24990, 'm', 329, null, null, 3, 3, 3, 4, 'Trend with the 37 kWh battery. The 52 kWh version reaches up to 454 km and costs about €33,490. Dutch press reported price rises on some versions after launch; the €24,990 entry price still held in September 2026.'),
+    c('c5hev', 'Citroën', 'C5 Aircross Hybrid', 'EU', false, 'mhev', 'suv', 4, 5, 37990, 'm', null, null, null, 4, 5, 2, 3, 'New-generation C5 Aircross with a 48-volt mild hybrid (136 hp) and an automatic gearbox. YOU trim.'),
+    c('c5ev', 'Citroën', 'ë-C5 Aircross', 'EU', false, 'bev', 'suv', 4, 5, 39590, 'm', 520, null, null, 4, 5, 2, 3, '73 kWh battery, up to 520 km. YOU trim. Citroën announced a 230 hp version with up to 681 km that is not on its April 2026 price list.'),
+    c('c5phev', 'Citroën', 'C5 Aircross Plug-in Hybrid', 'EU', false, 'phev', 'suv', 4, 5, 41290, 'm', 86, null, null, 4, 5, 2, 3, '195 hp plug-in hybrid. Business, the cheapest trim; Autozine reports about 86 km electric range.'),
+    c('urbancruiser', 'Toyota', 'Urban Cruiser', 'JP', false, 'bev', 'suv', 2, 5, 34795, 'i', 426, 4, 2025, 3, 3, 3, 3, 'Dynamic with the 61 kWh battery. Toyota’s page starts from €32,995 for a smaller-battery version. Built with Suzuki; the e Vitara is its twin. Euro NCAP 4 stars (2025).'),
+    c('bz4xt', 'Toyota', 'bZ4X Touring', 'JP', false, 'bev', 'estate', 4, 5, 48995, 'i', 591, null, null, 5, 4, 3, 4, 'Estate version of the bZ4X: Dynamic, front-wheel drive, 74.7 kWh battery. Toyota’s temporary €3,000 discount to 31 December 2026 is left out. In showrooms from June 2026.'),
+    c('evitara', 'Suzuki', 'e Vitara', 'JP', false, 'bev', 'suv', 2, 5, 31995, 'm', 344, 4, 2025, 3, 3, 3, 3, 'Select with the 49 kWh battery. The 61 kWh version reaches 426 km from €35,295; AllGrip-e all-wheel drive is available. Twin of the Toyota Urban Cruiser. Euro NCAP 4 stars (2025).'),
+    c('cx6e', 'Mazda', 'CX-6e', 'JP', false, 'bev', 'suv', 4, 5, 45990, 'm', 484, null, null, 4, 4, 3, 4, 'Takumi Business Edition with a 78 kWh LFP battery, developed with Changan in China. Mazda calls the 484 km figure preliminary. Deliveries from summer 2026.'),
+    c('cx5', 'Mazda', 'CX-5', 'JP', false, 'mhev', 'suv', 4, 5, 45990, 'i', null, 5, 2025, 4, 4, 4, 3, 'New generation: 2.5 petrol with a 24-volt mild hybrid, front-wheel drive and automatic. Autozine reports one price, for the standard version. In showrooms since March 2026. Euro NCAP 5 stars (2025).'),
+    c('mazda6e', 'Mazda', '6e', 'JP', false, 'bev', 'sedan', 4, 5, 40990, 'i', 560, null, null, 4, 4, 3, 4, 'Electric saloon, first sold in the Netherlands in 2025. The model-year 2027 update has a single 78 kWh battery and reaches showrooms in November 2026. AutoRai gives 560 km without saying it is WLTP.'),
+    c('es90', 'Volvo', 'ES90', 'EU', false, 'bev', 'sedan', 4, 5, 67995, 'm', 664, null, null, 4, 5, 4, 5, 'Single Motor Extended Range, 92 kWh. Volvo’s page gives up to 664 km without labelling it WLTP. The Twin Motor (106 kWh, up to 702 km) starts at €77,995; AutoReview lists a Core at €66,580.'),
+    c('ex60', 'Volvo', 'EX60', 'EU', false, 'bev', 'suv', 4, 5, 62680, 'i', 612, null, null, 4, 5, 4, 5, 'P6 Plus with an 80 kWh battery; the range is from Volvo’s Belgian page. The P10 (up to 661 km) starts at €67,680 and the P12 (up to 810 km) at €73,680. Deliveries from late 2026.'),
+    c('glc', 'Mercedes-Benz', 'GLC 400 4MATIC (electric)', 'EU', false, 'bev', 'suv', 4, 5, 72642, 'i', 713, null, null, 4, 5, 4, 5, 'Electric GLC with EQ technology, 94 kWh and 360 kW all-wheel drive. Mercedes NL announced ‘from €72,642’ in October 2025.'),
+    c('clasb', 'Mercedes-Benz', 'CLA 250+ Shooting Brake (electric)', 'EU', false, 'bev', 'estate', 4, 5, 54986, 'i', 768, null, null, 4, 5, 4, 5, 'Electric estate with an 85 kWh battery. The CLA 350 4MATIC costs from €66,602. The CLA saloon scored 5 stars at Euro NCAP in 2025; the estate has no rating of its own on file.'),
+    c('gla', 'Mercedes-Benz', 'GLA 250+ (electric)', 'EU', false, 'bev', 'suv', 3, 5, 52344, 'i', 657, null, null, 3, 5, 4, 5, 'New-generation electric GLA with an 85 kWh battery; Mercedes quotes up to 657 km for the range. The 58 kWh GLA 200 costs from €46,899 but its range is not stated. Introduced in November 2026; a hybrid follows in early 2027.'),
+    c('i3', 'BMW', 'i3 (Neue Klasse saloon)', 'EU', false, 'bev', 'sedan', 4, 5, 63301, 'i', 820, null, null, 4, 5, 5, 5, 'The new i3 is a saloon, not the old hatchback. 50 xDrive with all-wheel drive; BMW NL gives 820 to 912 km. The First Edition costs €72,995. Deliveries from autumn 2026.'),
+    c('a390', 'Alpine', 'A390 GT', 'EU', false, 'bev', 'suv', 4, 5, 67900, 'i', 557, null, null, 3, 4, 5, 4, 'Sporty five-seat fastback crossover with 400 hp and three electric motors. Orders opened in November 2025.'),
+    c('gv60', 'Genesis', 'GV60', 'KR', true, 'bev', 'suv', 3, 5, 49990, 'i', 561, null, null, 3, 4, 4, 5, 'Genesis, Hyundai’s luxury brand, opened in the Netherlands in March 2026. Range up to about 561 km depending on version.'),
+    c('gv70', 'Genesis', 'GV70 Electrified', 'KR', true, 'bev', 'suv', 4, 5, 65400, 'i', 479, null, null, 4, 5, 4, 5, '84 kWh battery with 800-volt charging. Genesis opened in the Netherlands in March 2026.'),
+    c('g80', 'Genesis', 'G80 Electrified', 'KR', true, 'bev', 'sedan', 4, 5, 74200, 'i', 570, null, null, 4, 5, 3, 5, 'Large electric saloon with 800-volt charging. Genesis opened in the Netherlands in March 2026.'),
+    c('compasshev', 'Jeep', 'Compass e-Hybrid', 'US', false, 'hev', 'suv', 3, 5, 42995, 'm', null, null, null, 3, 3, 3, 3, 'New-generation Compass, 145 hp full hybrid, Altitude. The First Edition (€44,995) is only available from stock. Jeep’s price is ready-to-drive.'),
+    c('compassphev', 'Jeep', 'Compass Plug-in e-Hybrid', 'US', false, 'phev', 'suv', 3, 5, 42995, 'm', 94, null, null, 3, 3, 3, 3, '225 hp plug-in hybrid with a 17.9 kWh battery. Altitude; the Summit costs €45,995.'),
+    c('compassev', 'Jeep', 'Compass Electric', 'US', false, 'bev', 'suv', 3, 5, 42995, 'm', 500, null, null, 3, 3, 3, 3, 'Altitude with the 74 kWh battery. The 96 kWh Long Range reaches 674 km from €47,495.'),
+    c('leaf', 'Nissan', 'Leaf', 'JP', false, 'bev', 'suv', 3, 5, 33990, 'i', 445, null, null, 3, 4, 3, 4, 'New-generation Leaf, now a crossover. Engage with the 52 kWh battery; the 75 kWh Evolve reaches 622 km from €47,990. First cars arrived in June 2026.'),
+    c('micra', 'Nissan', 'Micra EV', 'JP', false, 'bev', 'hatch', 2, 5, 29590, 'i', 319, null, null, 2, 3, 3, 3, 'New-generation Micra on the Renault 5’s platform. Engage with the 40 kWh battery; the 52 kWh Advance reaches 419 km from €34,590. The Netherlands was among its first markets.'),
+    c('actyon', 'KGM', 'Actyon Hybrid', 'KR', true, 'hev', 'suv', 4, 5, 46990, 'i', null, null, null, 4, 3, 3, 3, 'Coupé-styled full-hybrid SUV from KGM (formerly SsangYong). Platinum; the Titanium costs €49,490. In showrooms since December 2025.')
+  ];
+
+  // Where each price comes from. ver = the version the price belongs to; src = the document; pd = its date;
+  // inc = 'all' when the source says the price includes btw, bpm and delivery (rijklaar) costs, 'x' when it does not say.
+  const META = {
+    picanto: ['Cheapest Picanto (trim not named)', 'Kia NL model page', 'read Nov 2026', 'all'],
+    aygox: ['Aygo X Hybrid 115, Play', 'Toyota NL model page', 'read Nov 2026', 'all'],
+    sandero: ['Sandero Eco-G 120 Expression (petrol and LPG)', 'Dacia NL model page', 'read Nov 2026', 'x'],
+    swift: ['Swift 1.2 Smart Hybrid Comfort, before the temporary €2,200 discount', 'Suzuki NL model page', 'read Nov 2026', 'x'],
+    clio: ['Clio full hybrid E-Tech 160, Evolution', 'Renault NL model page', 'read Nov 2026', 'x'],
+    yaris: ['Yaris Hybrid 115, Comfort', 'Toyota NL model page', 'read Nov 2026', 'all'],
+    mazda2: ['Mazda2 Hybrid Prime-Line', 'Autozine, reporting Mazda NL prices', '19 Mar 2026', 'all'],
+    mg3: ['MG3 Hybrid+ Standard', 'MG NL model page', 'read Nov 2026', 'all'],
+    yariscross: ['Yaris Cross Hybrid 115, base version', 'Toyota NL model page', 'read Nov 2026', 'all'],
+    puma: ['Puma Hybrid (mild hybrid)', 'Ford NL model page', 'read Nov 2026', 'x'],
+    mgzs: ['Not confirmed: MG NL shows no price on the model page', '', '', ''],
+    duster: ['Duster essential Eco-G 120 (petrol and LPG)', 'Dacia NL model page', 'read Nov 2026', 'x'],
+    jogger: ['Five-seat Eco-G 120 essential. Seven seats cost more; not confirmed', 'Dacia NL model page', 'read Nov 2026', 'x'],
+    spring: ['Spring, cheapest listed', 'Dacia NL model page', 'read Nov 2026', 'x'],
+    t03: ['T03, 37.3 kWh', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    twingo: ['Twingo E-Tech Evolution 80 hp, urban range', 'Renault NL model page', 'read Nov 2026', 'x'],
+    dolphinsurf: ['Active, 30 kWh', 'BYD NL price list', '1 Apr 2026', 'all'],
+    ec3: ['ë-C3 You, 30 kWh', 'Citroën NL model page', 'read Nov 2026', 'x'],
+    inster: ['Inster, cheapest listed (trim not named)', 'Hyundai NL model page', 'read Nov 2026', 'x'],
+    pandaev: ['Not confirmed: Fiat NL shows a price only after a trade-in premium', 'Fiat NL model page', 'read Nov 2026', 'x'],
+    b05: ['B05 ‘vanaf’ price (version not named; Pro 56.2 kWh gives 401 km)', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    r5: ['Five 95 hp, urban range', 'Renault NL model page', 'read Nov 2026', 'x'],
+    ioniq3: ['Ioniq 3, cheapest listed, before up to €750 of temporary benefit', 'Hyundai NL model page', 'read Nov 2026', 'x'],
+    r4: ['Evolution 120 hp, urban range', 'Renault NL model page', 'read Nov 2026', 'x'],
+    mg4: ['MG4 Electric Standard. Old list, may be out of date', 'Van Mossel MG price list', 'Jun 2025', 'all'],
+    atto2: ['EV Business, 64.8 kWh', 'BYD NL model page', 'read Nov 2026', 'x'],
+    b10: ['B10 ‘vanaf’ price (version not named; Pro 56.2 kWh gives 361 km)', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    elroq: ['Tour Edition, 58 kWh', 'Škoda NL price list', '1 Jun 2026', 'all'],
+    ev3: ['EV3 ‘vanaf’ price (58.3 kWh)', 'Kia NL model page', 'read Nov 2026', 'all'],
+    ex30: ['EX30 Essential, model year 2027', 'Volvo NL model page', 'read Nov 2026', 'x'],
+    kona: ['Kona Electric ‘vanaf’ price (smaller 48.6 kWh battery)', 'Hyundai NL model page', 'read Nov 2026', 'x'],
+    modely: ['Model Y Standard. Tesla’s own page could not be read', 'Top Gear NL, reporting the Tesla NL price', 'Oct 2025', 'x'],
+    model3: ['Model 3 Standard. Tesla’s own page could not be read', 'AutoReview, reporting the Tesla NL price', 'Dec 2025', 'x'],
+    c10: ['C10 ‘vanaf’ price (version not named; Pro 69.9 kWh gives 420 km)', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    g6: ['G6 Standard Range RWD, 68.5 kWh', 'AutoReview price table', 'undated', 'x'],
+    sealion7: ['Comfort, 82.5 kWh', 'BYD NL price list', '1 Apr 2026', 'all'],
+    ix3: ['No cash price on BMW NL. German list price used as a guide (iX3 50 xDrive)', '', '', ''],
+    tang: ['Flagship AWD, 108.8 kWh, seven seats', 'BYD NL price list', '1 Apr 2026', 'all'],
+    sealu: ['Boost, front-wheel drive, 18.3 kWh', 'BYD NL price list', '1 Apr 2026', 'all'],
+    c10r: ['C10 Hybrid EV ‘vanaf’ price', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    lynk01: ['01 More (the Core trim has no price on the page)', 'Lynk & Co NL model page', 'read Nov 2026', 'x'],
+    tiguan: ['VW NL ‘vanaf’ price; the page does not say which version, the plug-in may cost more', 'VW NL model page', 'read Nov 2026', 'all'],
+    troc: ['T-Roc ‘vanaf’ price (engine not named)', 'VW NL model page', 'read Nov 2026', 'all'],
+    golf: ['Golf Trend 1.5 TSI 116 hp, manual (petrol)', 'VW NL price list', '28 Oct 2026', 'all'],
+    corolla: ['Corolla Touring Sports Hybrid', 'Toyota NL model page', 'read Nov 2026', 'all'],
+    chr: ['C-HR Hybrid 140, Active', 'Toyota NL model page', 'read Nov 2026', 'all'],
+    niro: ['Niro Hybrid ‘vanaf’ price', 'Kia NL model page', 'read Nov 2026', 'all'],
+    tucson: ['Tucson Hybrid 230 hp ‘vanaf’ price', 'Hyundai NL model page', 'read Nov 2026', 'x'],
+    octavia: ['‘Vanaf’ price with a €1,000 trade-in discount; engine not named', 'Škoda NL model page', 'read Nov 2026', 'x'],
+    kodiaq: ['Five-seat ‘vanaf’ price. Seven seats cost more; not confirmed', 'Škoda NL model page', 'read Nov 2026', 'x'],
+    rav4: ['RAV4 Plug-in Hybrid ‘vanaf’ price', 'Toyota NL model page', 'read Nov 2026', 'all'],
+
+    ev2: ['EV2 Essential, 42.2 kWh', 'Kia NL price list (copy on a dealer site)', 'Mar 2026', 'all'],
+    ev5: ['EV5 Air, 81.4 kWh', 'Kia NL price list (copy on a dealer site)', 'Sep 2025', 'all'],
+    stonic: ['Stonic 1.0 T-GDi mild hybrid ComfortLine, manual', 'Kia NL price list (copy on a dealer site)', 'Apr 2026', 'all'],
+    sportage: ['Sportage 1.6 T-GDi Hybrid 239 hp, ComfortLine', 'Kia NL price list (copy on a dealer site)', 'Jan 2026', 'all'],
+    p208: ['Cheapest 208 on the list, read as the 1.2 Turbo 100 Style (the price table could not be matched row by row)', 'Peugeot NL price list (copy on a dealer site)', '1 Mar 2026', 'all'],
+    p2008: ['2008 Style Hybrid 145 (48-volt mild hybrid)', 'Peugeot NL price list (copy on a dealer site)', '1 Jul 2025', 'all'],
+    p3008: ['3008 Hybrid 145 Allure (48-volt mild hybrid); the table was partly scrambled, so matched by price steps', 'Peugeot NL price list (copy on a dealer site)', '1 Nov 2025', 'all'],
+    corsa: ['Corsa 1.2 Turbo Hybrid 110 Business Edition: €25,999 plus the €1,000 delivery cost Opel lists separately', 'Opel NL price list (copy on a dealer site)', '18 Oct 2025', 'all'],
+    frontera: ['Frontera 1.2 Turbo Hybrid 110 Edition: €30,499 plus the €1,000 delivery cost Opel lists separately', 'Opel NL price list (copy on a dealer site)', '13 Oct 2025', 'all'],
+    captur: ['Captur full hybrid E-Tech 160, Evolution', 'Renault NL price list', '26 Aug 2026', 'all'],
+    symbioz: ['Symbioz full hybrid E-Tech 160, Evolution', 'Renault NL price list', '26 Aug 2026', 'all'],
+    ibiza: ['Ibiza Reference 1.0 EcoTSI 95 hp, manual', 'Seat NL price list', 'Jun 2026', 'all'],
+    polo: ['Polo Edition 1.0 MPI 80 hp, manual', 'VW NL price list', '1 Jan 2026', 'all'],
+    id3: ['ID.3 Neo Trend, 50 kWh', 'VW NL price list', '20 May 2026', 'all'],
+    id4: ['ID.4 Limited Edition, 58 kWh', 'VW NL price list', '1 Sep 2026', 'all'],
+    id7: ['ID.7 Limited Edition, 59 kWh', 'VW NL price list', '31 Mar 2026', 'all'],
+    tayron: ['Tayron Life Edition eHybrid 204 hp', 'VW NL price list', '14 Nov 2024', 'all'],
+    tayron7: ['Tayron Life Edition 1.5 eTSI 150 hp (€57,490) plus the third-row option (€890); the list does not give this total and notes the option can change the BPM', 'VW NL price list', '14 Nov 2024', 'all'],
+    raval: ['Raval Essential, 37 kWh, 85 kW', 'Cupra NL price list', '14 Oct 2026', 'all'],
+    enyaq: ['Enyaq 60 Selection, 58 kWh', 'Škoda NL price list', '1 Oct 2026', 'all'],
+    chrplus: ['C-HR+ Dynamic Limited Edition, 57.7 kWh', 'Toyota NL price list', '1 Aug 2026', 'all'],
+    q4: ['Q4 e-tron edition, 204 hp', 'Audi NL announcement', '12 May 2026', 'all'],
+    a3: ['A3 Sportback ‘vanaf’ price (version not named)', 'Audi NL', '30 Sep 2025', 'all'],
+    q3: ['Q3 SUV 150 kW e-hybrid, Pro Line', 'Audi NL announcement', '23 Oct 2026', 'all'],
+    cla: ['CLA 180 (48-volt mild hybrid), launch price', 'Mercedes-Benz NL press release', '7 Nov 2025', 'all'],
+    minicooper: ['Cooper E Essential, 40.7 kWh', 'AutoReview, reporting MINI NL prices', 'read Nov 2026', 'x'],
+    xc40: ['XC40 Essential (mild hybrid petrol), ‘vanaf’ price', 'Volvo NL model page', 'read Nov 2026', 'x'],
+    v60: ['V60 Essential (mild hybrid), ‘vanaf’ price', 'Volvo NL model page', 'read Nov 2026', 'x'],
+    xc60: ['XC60 B5 Core (mild hybrid petrol)', 'Volvo NL price list', '1 Apr 2026', 'x'],
+    kuga: ['Kuga Titanium plug-in hybrid, cheapest on the list', 'Ford NL price list (copy on a dealer site)', '1 Jan 2025', 'all'],
+    qashqai: ['Qashqai 1.5 e-Power Acenta', 'Nissan NL', 'read Nov 2026', 'x'],
+    ix1: ['iX1 eDrive20 Pure Edition (includes the xLine package and Premium Pack)', 'BMW NL model page', 'read Nov 2026', 'x'],
+    i5: ['i5 eDrive40 Pure Edition, ‘vanaf’ price (the page also shows a temporary €69,532)', 'BMW NL model page', 'read Nov 2026', 'x'],
+    omoda5hev: ['Omoda 5 SHS-H, Comfort', 'AutoRAI, reporting Omoda NL prices', '26 Nov 2025', 'x'],
+    omoda5ev: ['Omoda 5 EV, entry price as reported', 'AutoRAI, reporting Omoda NL prices', '26 Nov 2025', 'x'],
+    omoda9: ['Omoda 9 SHS, ‘from’ price', 'Dutch press reports of the Omoda price list (Autozine, AutoReview)', 'undated', 'x'],
+    jaecoo5: ['Jaecoo 5 EV, entry version', 'Dealer’s copy of the Jaecoo NL price list', 'undated', 'x'],
+    jaecoo7: ['Jaecoo 7 SHS, entry version', 'Autoblog, reporting Jaecoo NL prices', '30 Jul 2025', 'x'],
+    jaecoo8: ['Jaecoo 8 SHS-P, five seats', 'Dutch press report (Tarantas)', '7 May 2026', 'x'],
+    jaecoo8s7: ['Jaecoo 8 SHS-P, seven seats', 'Dutch press report (Tarantas)', '7 May 2026', 'x'],
+    s05: ['Deepal S05 Pro', 'Changan NL price list', '1 Jan 2026', 'all'],
+    s07: ['Deepal S07, entry version', 'Changan NL price list', '1 Jan 2026', 'all'],
+    e2: ['E2, ‘from’ price (early-bird €20,990)', 'Autoblog, reporting Geely NL prices', '7 Sep 2026', 'x'],
+    e5: ['E5 Pro', 'AutoReview and evupdate, reporting Geely NL prices', '26 Mar 2026', 'x'],
+    starray: ['Starray EM-i Pro', 'AutoReview, reporting Geely NL prices', '3 Apr 2026', 'x'],
+    tiggo4: ['Tiggo 4 hybrid, ‘from’ price', 'Chery dealers (Hans Jongerius, Autocentrum van Vliet)', '26 Aug 2026', 'x'],
+    tiggo7: ['Tiggo 7 plug-in hybrid, ‘from’ price', 'Chery dealers (Hans Jongerius, Autocentrum van Vliet)', '26 Aug 2026', 'x'],
+    tiggo8: ['Tiggo 8 plug-in hybrid, ‘from’ price', 'Chery dealers (Hans Jongerius, Autocentrum van Vliet)', '26 Aug 2026', 'x'],
+    atto2dmi: ['Atto 2 DM-i Active (7.8 kWh)', 'BYD NL model page', 'read Nov 2026', 'x'],
+    dolphing: ['Dolphin G DM-i Active', 'BYD NL model page', 'read Nov 2026', 'x'],
+    atto3evo: ['Atto 3 Evo Design, rear-wheel drive, 74.8 kWh', 'BYD NL model page', 'read Nov 2026', 'x'],
+    seal6: ['Seal 6 DM-i Boost', 'BYD NL model page', 'read Nov 2026', 'x'],
+    seal6t: ['Seal 6 DM-i Touring Boost', 'BYD NL model page', 'read Nov 2026', 'x'],
+    mgs5: ['MGS5 EV Comfort, standard-range battery', 'MG NL price list (copy on Van Mossel’s site)', 'Jun 2025', 'x'],
+    mgs6: ['MGS6 EV Luxury Long Range, 77 kWh', 'Autozine, reporting MG NL prices', '10 Jan 2026', 'x'],
+    mgs9: ['MGS9 plug-in hybrid Comfort, before the temporary €2,000 launch discount', 'Autozine, reporting MG NL prices', '15 Apr 2026', 'x'],
+    im5: ['IM5 Standard Range RWD, 75 kWh', 'Autozine, reporting MG NL prices', '17 Sep 2026', 'x'],
+    im6: ['IM6 Standard Range RWD, 75 kWh', 'Autozine, reporting MG NL prices', '17 Sep 2026', 'x'],
+    mghs: ['HS Hybrid+ Comfort', 'Autozine, reporting MG NL prices', '29 Jul 2025', 'x'],
+    mg4urban: ['MG4 EV Urban, 43 kWh Comfort', 'Van Mossel MG model page', 'undated', 'x'],
+    b03x: ['B03X ‘vanaf’ price (version not named; the Pro has 39.8 kWh and 292 km)', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    b10r: ['B10 Hybrid EV ‘vanaf’ price', 'Leapmotor NL model page', 'read Nov 2026', 'x'],
+    p7plus: ['P7+ RWD Long Range, ‘vanaf’ price', 'EV Update, reporting Xpeng NL prices', '9 Jan 2026', 'x'],
+    zeekr7x: ['7X Business Edition, ‘from’ price', 'Zeekr Europe NL offers page', 'read Nov 2026', 'x'],
+    zeekr7gt: ['7GT Business Edition RWD, 75 kWh', 'Autozine, reporting Zeekr NL prices', '22 Jun 2026', 'x'],
+    lynk08: ['08 Business Edition, ‘from’ price', 'Hedin Automotive (Lynk & Co dealer) page', 'read Nov 2026', 'x'],
+    ev4: ['EV4 Air, 58.3 kWh', 'Kia NL price list (copy on a dealer’s site)', 'Nov 2025', 'all'],
+    k4: ['K4 Air hatchback, 1.0 T-GDi mild hybrid', 'Autozine, reporting Kia NL prices', '2 Mar 2026', 'x'],
+    seltos: ['Seltos Hybrid X-Line', 'Autozine, reporting Kia NL prices', '25 Jun 2026', 'x'],
+    ioniq9: ['IONIQ 9 Style, rear-wheel drive, 7 seats', 'Hyundai NL price list (copy on Van Mossel’s site)', 'Jun 2025', 'all'],
+    epiq: ['Epiq Essence 35', 'elektrischeauto.nl, reporting Škoda NL prices', '22 May 2026', 'x'],
+    idpolo: ['ID. Polo Trend, 37 kWh, ‘from’ price', 'Volkswagen NL press release', '29 Apr 2026', 'x'],
+    c5hev: ['C5 Aircross Hybrid 145 YOU', 'Citroën NL consumer price list MY12 (copy on a dealer’s site)', '1 Apr 2026', 'all'],
+    c5ev: ['ë-C5 Aircross Electric 210 Comfort Range YOU', 'Citroën NL consumer price list MY12 (copy on a dealer’s site)', '1 Apr 2026', 'all'],
+    c5phev: ['C5 Aircross Plug-in Hybrid 195 Business', 'Citroën NL consumer price list MY12 (copy on a dealer’s site)', '1 Apr 2026', 'all'],
+    urbancruiser: ['Urban Cruiser Dynamic, 61 kWh', 'Autozine, reporting Toyota NL prices', '6 Mar 2026', 'x'],
+    bz4xt: ['bZ4X Touring Dynamic, front-wheel drive', 'Autozine, reporting Toyota NL prices', '3 Jun 2026', 'x'],
+    evitara: ['e VITARA Select, 49 kWh', 'Suzuki NL price list', '15 Dec 2025, prices from 1 Jan 2026', 'all'],
+    cx6e: ['CX-6e Takumi Business Edition', 'Mazda NL blog (price announcement)', '13 Mar 2026', 'all'],
+    cx5: ['CX-5 standard version, 2.5 e-Skyactiv G 141 M Hybrid', 'Autozine, reporting Mazda NL prices', '27 Feb 2026', 'all'],
+    mazda6e: ['6e Takumi Business Edition, 78 kWh', 'AutoRai, reporting Mazda NL prices', '1 Sep 2026', 'x'],
+    es90: ['ES90 Single Motor Extended Range, ‘from’ price', 'Volvo NL specifications page', 'read Nov 2026', 'x'],
+    ex60: ['EX60 P6 Plus', 'AutoReview, reporting Volvo NL prices', 'undated', 'x'],
+    glc: ['GLC 400 4MATIC Business Solution or Launch Edition', 'Mercedes-Benz NL press release', '22 Oct 2025', 'all'],
+    clasb: ['CLA 250+ Shooting Brake Business Solution', 'Autozine, reporting Mercedes-Benz NL prices', '25 Nov 2025', 'x'],
+    gla: ['GLA 250+ Business Solution', 'Autozine, reporting Mercedes-Benz NL prices', '30 Jul 2026', 'x'],
+    i3: ['i3 50 xDrive, ‘from’ price', 'elektrischeauto.nl, reporting BMW NL prices', '20 Jun 2026', 'x'],
+    a390: ['A390 GT', 'Autozine, reporting Alpine NL prices', '31 Mar 2026', 'x'],
+    gv60: ['GV60, ‘from’ price', 'Autozine, reporting Genesis NL prices', '20 Mar 2026', 'x'],
+    gv70: ['Electrified GV70, ‘from’ price', 'Autozine, reporting Genesis NL prices', '20 Mar 2026', 'x'],
+    g80: ['Electrified G80, ‘from’ price', 'Autozine, reporting Genesis NL prices', '20 Mar 2026', 'x'],
+    compasshev: ['Compass e-Hybrid Altitude', 'Jeep NL price list', '23 Jun 2026', 'all'],
+    compassphev: ['Compass Plug-in e-Hybrid Altitude', 'Jeep NL price list', '23 Jun 2026', 'all'],
+    compassev: ['Compass Full Electric Altitude, 74 kWh', 'Jeep NL price list', '23 Jun 2026', 'all'],
+    leaf: ['Leaf Engage, 52 kWh', 'Autozine, reporting Nissan NL prices', '18 May 2026', 'x'],
+    micra: ['Micra EV Engage, 40 kWh', 'Autozine, reporting Nissan NL prices', '20 Aug 2025', 'x'],
+    actyon: ['Actyon Hybrid Platinum', 'Autozine, reporting KGM NL prices', '17 Dec 2025', 'x']
+  };
+  CARS.forEach(car => { const m = META[car.id]; if (m) { car.ver = m[0]; car.src = m[1]; car.pd = m[2]; car.inc = m[3]; } });
+
+  // ---------- QUESTIONS ----------
+  const Q = [
+    { id: 'own', group: 'Money', title: 'How will you pay for it?', help: 'This decides how we ask about your budget next.', type: 'single',
+      options: [
+        { v: 'buy', label: 'I will buy it', sub: 'Cash or a loan' },
+        { v: 'lease', label: 'Private lease', sub: 'A monthly fee, no ownership' },
+        { v: 'company', label: 'Company car', sub: 'I pay bijtelling (tax on private use)' }
+      ] },
+    { id: 'budget', group: 'Money', type: 'single', dynamic: true,
+      titles: {
+        buy: 'What is your top purchase price?',
+        lease: 'What monthly private lease can you afford?',
+        company: 'How much monthly bijtelling is acceptable?'
+      },
+      helps: {
+        buy: 'Price including tax. We include cars up to about 5% above this.',
+        lease: 'Our estimate for a 48-month, 15,000 km contract with maintenance, road tax and insurance, worked out from current lessor offers. A real quote depends on the lessor, term and mileage.',
+        company: 'The monthly amount added to your taxable income. For an electric car it is 18% of the first \u20ac30,000 of list price and 22% above that; for every other car, including plug-in hybrids, it is 22%. So the same amount buys a more expensive electric car. What you actually pay is your tax rate times this amount.'
+      },
+      optionsBy: {
+        buy: [
+          { v: 'b1', label: 'Up to \u20ac25,000' },
+          { v: 'b2', label: '\u20ac25,000 to \u20ac35,000' },
+          { v: 'b3', label: '\u20ac35,000 to \u20ac45,000' },
+          { v: 'b4', label: '\u20ac45,000 to \u20ac60,000' },
+          { v: 'b5', label: 'No real limit' }
+        ],
+        lease: [
+          { v: 'b1', label: 'Up to \u20ac450 a month', sub: 'Mostly small and city cars' },
+          { v: 'b2', label: '\u20ac450 to \u20ac600 a month', sub: 'Compact cars and small SUVs' },
+          { v: 'b3', label: '\u20ac600 to \u20ac750 a month', sub: 'Mid-size electric cars and family cars' },
+          { v: 'b4', label: '\u20ac750 to \u20ac1,000 a month', sub: 'Large and premium' },
+          { v: 'b5', label: 'No real limit' }
+        ],
+        company: []
+      } },
+    { id: 'use', group: 'Daily life', title: 'Where will it spend most of its time?', type: 'single',
+      options: [
+        { v: 'city', label: 'In town', sub: 'Short trips, stop and go' },
+        { v: 'mixed', label: 'A mix', sub: 'Town, provincial roads, some motorway' },
+        { v: 'motorway', label: 'On the motorway', sub: 'Commuting or long daily legs' }
+      ] },
+    { id: 'km', group: 'Daily life', title: 'How many kilometres do you drive in a year?', type: 'single',
+      options: [
+        { v: 'k8', label: 'Under 8,000' },
+        { v: 'k15', label: '8,000 to 15,000' },
+        { v: 'k25', label: '15,000 to 25,000' },
+        { v: 'k25p', label: 'More than 25,000' }
+      ] },
+    { id: 'charging', group: 'Daily life', title: 'Where could you plug in overnight?', help: 'This matters more than anything else for choosing between electric, plug-in and hybrid.', type: 'single',
+      options: [
+        { v: 'home', label: 'At home or work', sub: 'Own driveway, garage or a charger I control' },
+        { v: 'public', label: 'A public charge point nearby', sub: 'A street charger within a short walk' },
+        { v: 'none', label: 'Nowhere reliable' }
+      ] },
+    { id: 'trips', group: 'Daily life', title: 'How often do you drive more than 300 km in one go?', type: 'single',
+      options: [
+        { v: 'rare', label: 'Hardly ever' },
+        { v: 'few', label: 'A few times a year', sub: 'Holidays, family visits' },
+        { v: 'often', label: 'Every month or more' }
+      ] },
+    { id: 'parking', group: 'Daily life', title: 'How tight is your parking?', type: 'single',
+      options: [
+        { v: 'tight', label: 'Tight', sub: 'Canal streets, small garage, parallel parking' },
+        { v: 'ok', label: 'No problem', sub: 'Driveway, wide street or big car park' }
+      ] },
+    { id: 'people', group: 'People and stuff', title: 'Who rides along?', type: 'single',
+      options: [
+        { v: 'p2', label: 'Mostly me, or the two of us' },
+        { v: 'p5', label: 'A family of four or five' },
+        { v: 'p7', label: 'Six or seven people, regularly' }
+      ] },
+    { id: 'cargo', group: 'People and stuff', title: 'How much do you carry?', type: 'single',
+      options: [
+        { v: 'low', label: 'Shopping and a bag' },
+        { v: 'some', label: 'Suitcases, a pram or a dog now and then' },
+        { v: 'lots', label: 'Bikes, gear or a big boot every week' }
+      ] },
+    { id: 'power', group: 'What you like', title: 'How do you feel about going electric?', type: 'single',
+      options: [
+        { v: 'bev', label: 'Fully electric only' },
+        { v: 'open', label: 'Open to anything', sub: 'Electric, plug-in or hybrid' },
+        { v: 'simple', label: 'Keep it simple', sub: 'Petrol or a hybrid that never needs a plug' }
+      ] },
+    { id: 'brand', group: 'What you like', title: 'How do you feel about newer brands?', help: 'Think BYD, Leapmotor, Xpeng and Lynk & Co next to Toyota, Kia and Volkswagen.', type: 'single',
+      options: [
+        { v: 'known', label: 'Only brands I already know' },
+        { v: 'proven', label: 'Fine, if safety and warranty check out' },
+        { v: 'curious', label: 'Curious, show me' }
+      ] },
+    { id: 'safety', group: 'What you like', title: 'How much does the Euro NCAP safety rating matter?', type: 'single',
+      options: [
+        { v: 'must5', label: 'Five stars or nothing', sub: 'Only cars with a 5-star rating' },
+        { v: 'important', label: 'Important', sub: 'Unrated and low-rated cars rank lower' },
+        { v: 'relaxed', label: 'Not a deciding factor' }
+      ] },
+    { id: 'body', group: 'What you like', title: 'Which shape do you prefer?', type: 'single',
+      options: [
+        { v: 'suv', label: 'SUV or crossover', sub: 'Higher seat, easier to get in' },
+        { v: 'hatch', label: 'Hatchback' },
+        { v: 'estate', label: 'Estate or MPV', sub: 'Maximum load space' },
+        { v: 'sedan', label: 'Saloon' },
+        { v: 'any', label: 'No preference' }
+      ] },
+    { id: 'feel', group: 'What you like', title: 'What should it feel like to drive?', type: 'single',
+      options: [
+        { v: 'comfort', label: 'Calm and comfortable' },
+        { v: 'drive', label: 'Lively and fun' },
+        { v: 'either', label: 'Either is fine' }
+      ] },
+    { id: 'tech', group: 'What you like', title: 'And the dashboard?', type: 'single',
+      options: [
+        { v: 'lots', label: 'Big screens and plenty of features' },
+        { v: 'simple', label: 'Simple, with real buttons' },
+        { v: 'either', label: 'Either is fine' }
+      ] },
+    { id: 'priorities', group: 'What you like', title: 'Pick the two things that matter most.', help: 'Choose up to two. They count extra when we rank the cars.', type: 'multi', max: 2,
+      options: [
+        { v: 'cost', label: 'Low cost', sub: 'Price and running costs' },
+        { v: 'space', label: 'Space' },
+        { v: 'range', label: 'Range and ease of fuelling' },
+        { v: 'safety', label: 'Safety' },
+        { v: 'tech', label: 'Technology' },
+        { v: 'enjoy', label: 'Driving enjoyment and comfort' }
+      ] }
+  ];
+
+  // ---------- HELPERS ----------
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const eur = n => '€' + Math.round(n).toLocaleString('nl-NL');
+  const CAPS = {
+    buy:     { b1: 25000, b2: 35000, b3: 45000, b4: 60000, b5: Infinity },
+    lease:   { b1: 450,   b2: 600,   b3: 750,   b4: 1000,  b5: Infinity },
+    company: { b1: 350,   b2: 500,   b3: 700,   b4: 1000,  b5: Infinity }
+  };
+  const OPEN_REF = { buy: 60000, lease: 1000, company: 1000 };
+  // Lease data: dated 'from' prices from the AutoReview comparator, set by the page from its embedded
+  // lease-data block. A 'from' price is the cheapest contract on offer (usually 72 months, 5,000 km), so
+  // stdFactor scales it to a 48-month, 15,000 km contract (the CBS standard spec).
+  let LEASE = { asOf: null, stdFactor: 1.25, overview: 'https://www.autoreview.nl/private-lease/deals', rows: {} };
+  const RATIO = { bev: 0.0152, phev: 0.016, other: 0.0144 }; // fallback share of price per month, replaced from the data
+  const classOf = c => (c.pt === 'bev' ? 'bev' : c.pt === 'phev' ? 'phev' : 'other');
+  function setLease(d) {
+    if (!d || !Array.isArray(d.rows)) return;
+    const rows = {};
+    d.rows.forEach(r => { if (r && r.id && r.from > 0) rows[r.id] = r; });
+    LEASE = { asOf: d.asOf || null, stdFactor: d.stdFactor > 1 ? d.stdFactor : 1.25, overview: d.overview || LEASE.overview, rows };
+    const bk = { bev: [], phev: [], other: [] };
+    CARS.forEach(c => { const r = rows[c.id]; if (r && !r.old) bk[classOf(c)].push(r.from / c.price); });
+    for (const k in bk) { const v = bk[k].sort((x, y) => x - y); if (v.length >= 2) RATIO[k] = (v[(v.length - 1) >> 1] + v[v.length >> 1]) / 2; }
+  }
+  // Manufacturer model pages in the Netherlands (from the brands' own sites, checked via search results and site navigation)
+  const MODEL = {
+    picanto: 'https://www.kia.com/nl/modellen/picanto/ontdekken/', aygox: 'https://www.toyota.nl/modellen/aygo-x',
+    sandero: 'https://www.dacia.nl/modellen/sandero.html', swift: 'https://www.suzuki.nl/auto/modellen/swift/',
+    clio: 'https://www.renault.nl/hybride-modellen/clio-e-tech-hybrid.html', yaris: 'https://www.toyota.nl/modellen/yaris',
+    mazda2: 'https://www.mazda.nl/modellen/mazda2-hybrid/', mg3: 'https://www.mgmotor.nl/model/mg3',
+    yariscross: 'https://www.toyota.nl/modellen/yaris-cross', puma: 'https://www.ford.nl/alle-modellen/nieuwe-puma',
+    mgzs: 'https://www.mgmotor.nl/model/zs-hev', duster: 'https://www.dacia.nl/hybride-en-elektrische-modellen/duster-hybrid.html',
+    jogger: 'https://www.dacia.nl/modellen/jogger.html', spring: 'https://www.dacia.nl/hybride-en-elektrische-modellen/spring.html',
+    t03: 'https://www.leapmotor.net/nl-nl/modellen/t03', twingo: 'https://www.renault.nl/elektrische-autos/twingo-e-tech-electric.html',
+    dolphinsurf: 'https://www.byd.com/nl/electric-cars/dolphin-surf', ec3: 'https://www.citroen.nl/modellen/e-c3.html',
+    inster: 'https://www.hyundai.com/nl/nl/modellen/inster.html', pandaev: 'https://www.fiat.nl/modellen/grande-panda-elektrisch',
+    b05: 'https://www.leapmotor.net/nl-nl/modellen/b05', r5: 'https://www.renault.nl/elektrische-autos/r5-e-tech-electric.html',
+    ioniq3: 'https://www.hyundai.com/nl/nl/modellen/ioniq-3.html', r4: 'https://www.renault.nl/elektrische-autos/r4-e-tech-electric.html',
+    mg4: 'https://www.mgmotor.nl/model/mg4', atto2: 'https://www.byd.com/nl/electric-cars/atto-2',
+    b10: 'https://www.leapmotor.net/nl-nl/modellen/b10', elroq: 'https://www.skoda.nl/modellen/elroq/elroq',
+    ev3: 'https://www.kia.com/nl/modellen/ev3/ontdekken/', ex30: 'https://www.volvocars.com/nl/cars/ex30-electric/',
+    kona: 'https://www.hyundai.com/nl/nl/modellen/kona-electric.html', modely: 'https://www.tesla.com/modely',
+    model3: 'https://www.tesla.com/model3', c10: 'https://www.leapmotor.net/nl-nl/modellen/c10', g6: 'https://www.xpeng.com/nl/g6',
+    sealion7: 'https://www.byd.com/nl/electric-cars/sealion-7', ix3: 'https://www.bmw.nl/nl/modellen/x-serie/ix3/bmw-ix3.html',
+    tang: 'https://www.byd.com/nl/configurator/tang', sealu: 'https://www.byd.com/nl/hybrid-cars/seal-u-dm-i',
+    c10r: 'https://www.leapmotor.net/nl-nl/modellen/c10-hybrid', lynk01: 'https://www.lynkco.com/nl-nl/cars/01',
+    tiguan: 'https://www.volkswagen.nl/nl/modellen/tiguan.html', troc: 'https://www.volkswagen.nl/nl/modellen/nieuwe-t-roc.html',
+    golf: 'https://www.volkswagen.nl/nl/modellen/golf.html', corolla: 'https://www.toyota.nl/modellen/corolla-touring-sports',
+    chr: 'https://www.toyota.nl/modellen/c-hr', niro: 'https://www.kia.com/nl/modellen/niro/ontdekken/',
+    tucson: 'https://www.hyundai.com/nl/nl/modellen/tucson-hybrid.html', octavia: 'https://www.skoda.nl/modellen/octavia/octavia-combi',
+    kodiaq: 'https://www.skoda.nl/modellen/kodiaq/kodiaq', rav4: 'https://www.toyota.nl/modellen/rav4',
+
+    ev2: 'https://www.kia.com/nl/modellen/ev2/ontdekken/', ev5: 'https://www.kia.com/nl/modellen/ev5/ontdekken/',
+    stonic: 'https://www.kia.com/nl/modellen/stonic/ontdekken/', sportage: 'https://www.kia.com/nl/modellen/sportage/ontdekken/',
+    p208: 'https://www.peugeot.nl/showroom/peugeot-208/hybrid-benzine.html', p2008: 'https://www.peugeot.nl/showroom/peugeot-2008/hybrid-benzine.html',
+    p3008: 'https://www.peugeot.nl/showroom/nieuwe-peugeot-3008/hybrid-plug-in-hybrid.html',
+    corsa: 'https://www.opel.nl/elektrisch-hybride/onze-modellen.html', frontera: 'https://www.opel.nl/cars/frontera/nieuwe-frontera/overzicht.html',
+    captur: 'https://www.renault.nl/hybride-modellen/captur.html', symbioz: 'https://www.renault.nl/hybride-modellen/symbioz.html',
+    ibiza: 'https://www.seat.nl/modellen/ibiza/design', polo: 'https://www.volkswagen.nl/nl/modellen/polo.html',
+    id3: 'https://www.volkswagen.nl/nl/modellen/id3-neo.html', id4: 'https://www.volkswagen.nl/nl/modellen/id4.html',
+    id7: 'https://www.volkswagen.nl/nl/modellen/id7.html', tayron: 'https://www.volkswagen.nl/nl/modellen/tayron.html', tayron7: 'https://www.volkswagen.nl/nl/modellen/tayron.html',
+    raval: 'https://www.cupraofficial.nl/modellen/raval', enyaq: 'https://www.skoda.nl/modellen/enyaq/enyaq',
+    chrplus: 'https://www.toyota.nl/modellen/c-hr-plus', q4: 'https://www.audi.nl/nl/modellen/q4/q4-e-tron/',
+    a3: 'https://www.audi.nl/nl/modellen/a3/', q3: 'https://www.audi.nl/nl/modellen/q3/',
+    cla: 'https://www.mercedes-benz.nl/passengercars/models/saloon/cla/overview.html',
+    minicooper: 'https://www.mini.nl/nl_NL/home/modellen/mini-cooper-electric/uitvoeringen-en-prijzen.html',
+    xc40: 'https://www.volvocars.com/nl/cars/xc40/', v60: 'https://www.volvocars.com/nl/cars/v60/', xc60: 'https://www.volvocars.com/nl/cars/xc60-hybrid/',
+    kuga: 'https://www.ford.nl/personenautos/kuga', qashqai: 'https://www.nissan.nl/voertuigen/nieuw/new-nissan-qashqai.html',
+    ix1: 'https://www.bmw.nl/nl/modellen/bmwi/ix1/bmw-ix1.html', i5: 'https://www.bmw.nl/nl/modellen/i-series/i5/highlights.html',
+    omoda5hev: 'https://www.omodajaecoo.nl/en/omoda-5-shs-h', omoda5ev: 'https://www.omodajaecoo.nl/', omoda9: 'https://www.omodajaecoo.nl/', jaecoo5: 'https://www.omodajaecoo.nl/', jaecoo7: 'https://www.omodajaecoo.nl/', jaecoo8: 'https://www.omodajaecoo.nl/', jaecoo8s7: 'https://www.omodajaecoo.nl/', s05: 'https://www.changaneurope.com/nl', s07: 'https://www.changaneurope.com/nl',
+    atto2dmi: 'https://www.bydauto.nl/plug-in-hybride/atto-2-dm-i/', dolphing: 'https://www.bydauto.nl/plug-in-hybride/dolphin-g-dm-i/', atto3evo: 'https://www.bydauto.nl/elektrische-autos/byd-atto-3-evo/', seal6: 'https://www.bydauto.nl/plug-in-hybride/seal-6-dmi/', seal6t: 'https://www.bydauto.nl/plug-in-hybride/seal-6-dmi-touring/', b03x: 'https://www.leapmotor.net/nl-nl/modellen/b03x', b10r: 'https://www.leapmotor.net/nl-nl/modellen/b10-hybrid', zeekr7x: 'https://www.zeekr.eu/models/7x', zeekr7gt: 'https://www.zeekr.eu/models/7gt',
+    ev4: 'https://www.kia.com/nl/modellen/ev4/ontdekken/', k4: 'https://www.kia.com/nl/modellen/k4/ontdekken/', seltos: 'https://www.kia.com/nl/modellen/seltos/ontdekken/', ioniq9: 'https://www.hyundai.com/nl/nl/modellen/ioniq-9.html', epiq: 'https://www.skoda.nl/modellen/epiq/epiq', idpolo: 'https://www.volkswagen.nl/nl/modellen/id-polo.html', c5hev: 'https://www.citroen.nl/modellen/c5-aircross.html', c5ev: 'https://www.citroen.nl/modellen/e-c5-aircross.html', c5phev: 'https://www.citroen.nl/modellen/c5-aircross.html', urbancruiser: 'https://www.toyota.nl/modellen/urban-cruiser', bz4xt: 'https://www.toyota.nl/modellen/bz4x-touring', evitara: 'https://www.suzuki.nl/auto/modellen/e-vitara/', cx6e: 'https://www.mazda.nl/modellen/mazda-cx-6e/', cx5: 'https://www.mazda.nl/modellen/mazda-cx-5/', mazda6e: 'https://www.mazda.nl/modellen/mazda-6e/', es90: 'https://www.volvocars.com/nl/cars/es90-electric/', ex60: 'https://www.volvocars.com/nl/cars/ex60-electric/', glc: 'https://www.mercedes-benz.nl/passengercars/models/suv/glc/overview.html', clasb: 'https://www.mercedes-benz.nl/passengercars/models/estate/cla-shooting-brake-electric/overview.html', gla: 'https://www.mercedes-benz.nl/passengercars/models/suv/gla-electric/overview.html', i3: 'https://www.bmw.nl/nl/modellen/3-serie/sedan/bmw-i3-sedan.html', gv60: 'https://www.genesis.com/nl/en/find-and-buy/build-your-genesis/choose-a-model', gv70: 'https://www.genesis.com/nl/en/find-and-buy/build-your-genesis/choose-a-model', g80: 'https://www.genesis.com/nl/en/find-and-buy/build-your-genesis/choose-a-model', compasshev: 'https://www.jeep.nl/nieuwe-jeep-compass/e-hybrid', compassphev: 'https://www.jeep.nl/nieuwe-jeep-compass/plugin-e-hybrid', compassev: 'https://www.jeep.nl/nieuwe-jeep-compass/4xe-full-electric', leaf: 'https://www.nissan.nl/voertuigen/nieuw/campagne-nieuwe-nissan-leaf.html', micra: 'https://www.nissan.nl/voertuigen/nieuw/campagne-nieuwe-nissan-micra.html', actyon: 'https://www.kgm.nl/nl/modellen/actyon-hybrid'
+  };
+  // 'from' = cheapest contract listed; std = estimate on 48 months / 15,000 km; est = no current offer found
+  function leaseInfo(car) {
+    const r = LEASE.rows[car.id];
+    const from = r ? r.from : car.price * RATIO[classOf(car)];
+    return { from, std: from * LEASE.stdFactor, est: !r, old: !!(r && r.old), asOf: (r && r.asOf) || LEASE.asOf, list: r ? r.list : null };
+  }
+  const BIJ_EV = 0.18, BIJ_CAP = 30000, BIJ_STD = 0.22; // NL 2026 rules
+  // Company-car budget bands: the same monthly bijtelling buys a different list price for an electric car
+  // (18% up to EUR 30,000, then 22%) than for any other car (22%). Show both so every reader sees their own number.
+  const nearest500 = n => Math.round(n / 500) * 500;
+  const listPriceFor = (monthly, ev) => !ev ? monthly * 12 / BIJ_STD
+    : monthly * 12 <= BIJ_EV * BIJ_CAP ? monthly * 12 / BIJ_EV : BIJ_CAP + (monthly * 12 - BIJ_EV * BIJ_CAP) / BIJ_STD;
+  Q[1].optionsBy.company = [350, 500, 700, 1000].map((m, i) => ({
+    v: 'b' + (i + 1), label: (i === 0 ? 'Up to ' + eur(m) : eur([0, 350, 500, 700][i]) + ' to ' + eur(m)) + ' a month',
+    sub: 'Electric car up to about ' + eur(nearest500(listPriceFor(m, true))) + ' list price. Petrol, hybrid or plug-in up to about ' + eur(nearest500(listPriceFor(m, false))) + '.'
+  })).concat([{ v: 'b5', label: 'No real limit' }]);
+  function bijMonthly(car) {
+    const p = car.price;
+    return car.pt === 'bev' ? (BIJ_EV * Math.min(p, BIJ_CAP) + BIJ_STD * Math.max(0, p - BIJ_CAP)) / 12 : BIJ_STD * p / 12;
+  }
+  // the number the buyer's budget is measured in: price, monthly lease, or monthly bijtelling
+  function burden(car, own) {
+    return own === 'lease' ? leaseInfo(car).std : own === 'company' ? bijMonthly(car) : car.price;
+  }
+  function burdenLabel(v, own) {
+    return own === 'buy' ? eur(v) : eur(Math.round(v / 5) * 5) + ' a month';
+  }
+  const budgetView = a => ({
+    title: Q[1].titles[a.own || 'buy'], help: Q[1].helps[a.own || 'buy'], options: Q[1].optionsBy[a.own || 'buy']
+  });
+  const BUDGET_LABEL = {};
+  const PT_LABEL = { bev: 'Electric', phev: 'Plug-in hybrid', hev: 'Hybrid', mhev: 'Mild hybrid', ice: 'Petrol' };
+  const BODY_LABEL = { city: 'City car', hatch: 'Hatchback', suv: 'SUV', estate: 'Estate', mpv: 'MPV', sedan: 'Saloon' };
+
+  function bodyFit(pref, c) {
+    if (pref === 'any') return 1;
+    const t = {
+      suv:   { suv: 1, mpv: .45, estate: .4, hatch: .3, city: .1, sedan: .15 },
+      hatch: { hatch: 1, city: .8, suv: c.size <= 2 ? .55 : .35, estate: .4, mpv: .2, sedan: .4 },
+      estate:{ estate: 1, mpv: .85, suv: .45, hatch: .2, city: .05, sedan: .3 },
+      sedan: { sedan: 1, hatch: .4, estate: .45, suv: .3, city: .1, mpv: .1 }
+    };
+    return t[pref][c.body];
+  }
+
+  // ---------- PLATE LOOKUP (RDW open data) ----------
+  // Two public datasets, both keyed by plate (kenteken, stored in capitals without dashes):
+  //   m9d7-ebf2 = main register (make, model, seats, length, mass ...), 8ys7-d773 = fuel and consumption (one row per fuel).
+  // Field names below come from RDW's published documentation and example records; they have not been checked against
+  // live responses. Everything is read defensively (several names, then a pattern) and every value may be a string.
+  const RDW = { main: 'https://opendata.rdw.nl/resource/m9d7-ebf2.json', fuel: 'https://opendata.rdw.nl/resource/8ys7-d773.json' };
+  function normalisePlate(input) {
+    const p = String(input == null ? '' : input).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return /^[A-Z0-9]{6}$/.test(p) && /[A-Z]/.test(p) && /[0-9]/.test(p) ? p : null;
+  }
+  const num = v => { if (v == null || v === '') return null; const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : null; };
+  const low = s => String(s == null ? '' : s).toLowerCase();
+  // value of the first listed key that is present, else of the first key matching the pattern
+  function field(row, names, re) {
+    if (!row || typeof row !== 'object') return null;
+    for (const k of names) if (row[k] != null && row[k] !== '') return row[k];
+    if (re) for (const k of Object.keys(row)) if (re.test(k) && row[k] != null && row[k] !== '') return row[k];
+    return null;
+  }
+  const ACRO = new Set(['BMW', 'MG', 'BYD', 'DS', 'KGM', 'GAC', 'NIO', 'JAC', 'GWM', 'DAF', 'MAN', 'VW']);
+  // RDW writes everything in capitals. Keep codes (GLC, RS, CLA, anything with a digit) and brand acronyms, capitalise the rest.
+  const CODES = new Set(['CLA', 'CLE', 'CLS', 'GLA', 'GLB', 'GLE', 'EQA', 'EQB', 'EQC', 'EQE', 'EQS', 'AMG', 'SUV', 'MPV', 'GTI', 'TDI', 'TSI', 'HEV', 'PHEV', 'SHS', 'DM', 'ID', 'EV', 'EQ']);
+  const titleCase = (s, isModel) => String(s == null ? '' : s).trim().replace(/\s+/g, ' ').split(' ').map(w =>
+    w.split('-').map(p => (!p || ACRO.has(p) || /\d/.test(p) || (isModel && (CODES.has(p) || (p.length <= 4 && !/[AEIOU]/.test(p))))) ? p : p[0].toUpperCase() + p.slice(1).toLowerCase()).join('-')).join(' ');
+  const FUEL_EN = { benzine: 'Petrol', diesel: 'Diesel', elektriciteit: 'Electric', lpg: 'LPG', cng: 'CNG', waterstof: 'Hydrogen', alcohol: 'Ethanol' };
+
+  // Fuel rows -> powertrain in our terms. A hybrid is two rows (a fuel plus electricity). Plug-in or not comes from the
+  // hybrid class (OVC = chargeable from outside), an external-charging range, or failing both, a low CO2 figure.
+  function readFuel(rows) {
+    rows = Array.isArray(rows) ? rows.filter(r => r && typeof r === 'object') : [];
+    if (!rows.length) return null;
+    const kinds = [];
+    rows.forEach(r => {
+      const f = low(field(r, ['brandstof_omschrijving'], /brandstof.*omschrijving/));
+      const k = Object.keys(FUEL_EN).find(x => f.indexOf(x) > -1);
+      if (k && kinds.indexOf(k) < 0) kinds.push(k);
+    });
+    if (!kinds.length) return null;
+    const hasElec = kinds.indexOf('elektriciteit') > -1, hasH2 = kinds.indexOf('waterstof') > -1;
+    const liquid = kinds.filter(k => k !== 'elektriciteit' && k !== 'waterstof');
+    let kw = null;
+    rows.forEach(r => [field(r, ['nettomaximumvermogen'], /^netto.*vermogen/), field(r, ['nominaal_continu_maximumvermogen'], /nominaal.*vermogen/)].forEach(v => {
+      const n = num(v); if (n != null && n > 0 && (kw == null || n > kw)) kw = n;
+    }));
+    let pt, label, plugin = null;
+    if ((hasElec || hasH2) && !liquid.length) {
+      pt = 'bev'; label = hasH2 ? 'Hydrogen (electric drive)' : 'Electric';
+    } else if (hasElec && liquid.length) {
+      const names = liquid.map(k => FUEL_EN[k].toLowerCase()).join(' + ');
+      rows.forEach(r => {
+        const cls = low(field(r, ['klasse_hybride_elektrisch_voertuig'], /klasse.*hybride/));
+        if (cls) { if (cls.indexOf('novc') > -1) { if (plugin == null) plugin = false; } else if (cls.indexOf('ovc') > -1) plugin = true; }
+        const ext = num(field(r, ['actieradius_extern_opladen_wltp'], /extern_opladen/));
+        if (ext != null && ext > 0) plugin = true;
+      });
+      if (plugin == null) { // no class or charging range: a plug-in hybrid reports very low CO2, a normal hybrid does not
+        let co2 = null;
+        rows.forEach(r => Object.keys(r).forEach(k => { if (/co2.*(gewogen|gecombineerd)/.test(k)) { const n = num(r[k]); if (n != null && n >= 0 && (co2 == null || n < co2)) co2 = n; } }));
+        if (co2 != null) plugin = co2 < 70;
+      }
+      pt = plugin ? 'phev' : 'hev';
+      label = (plugin ? 'Plug-in hybrid' : 'Hybrid') + ' (' + names + ' + electric)';
+    } else {
+      pt = 'ice'; label = liquid.map(k => FUEL_EN[k]).join(' + ');
+    }
+    return { pt, label, kw, plugin };
+  }
+  const sizeFromLength = cm => cm <= 392 ? 1 : cm <= 422 ? 2 : cm <= 450 ? 3 : cm <= 480 ? 4 : 5; // loosely matched to our own 1 to 5 size scale
+  const sizeFromMass = kg => kg <= 1050 ? 1 : kg <= 1350 ? 2 : kg <= 1700 ? 3 : kg <= 2000 ? 4 : 5;
+  // our cars carry no power figure, so power is compared on our own 1 to 5 'lively to drive' rating (see the note on the page)
+  const powerLevel = kw => kw == null ? null : kw <= 55 ? 1 : kw <= 90 ? 2 : kw <= 130 ? 3 : kw <= 190 ? 4 : 5;
+
+  // main-register row(s) + fuel row(s) -> { status:'ok', profile } or { status:'notfound' | 'notcar' }
+  function plateProfile(mainRows, fuelRows) {
+    const m = Array.isArray(mainRows) && mainRows[0] && typeof mainRows[0] === 'object' ? mainRows[0] : null;
+    if (!m) return { status: 'notfound' };
+    const kind = field(m, ['voertuigsoort']);
+    if (kind && low(kind).indexOf('personenauto') < 0) return { status: 'notcar', kind: String(kind) };
+    const make = titleCase(field(m, ['merk']), false), model = titleCase(field(m, ['handelsbenaming']), true);
+    if (!make && !model) return { status: 'notfound' };
+    let seats = num(field(m, ['aantal_zitplaatsen']));
+    seats = seats != null && seats >= 1 && seats <= 9 ? Math.round(seats) : null;
+    let cm = num(field(m, ['lengte']));
+    if (cm != null && cm > 1000) cm /= 10;
+    cm = cm != null && cm >= 200 && cm <= 700 ? Math.round(cm) : null;
+    const mass = num(field(m, ['massa_ledig_voertuig'])) || num(field(m, ['massa_rijklaar']));
+    const f = readFuel(fuelRows);
+    let kw = f ? f.kw : null;
+    if (kw == null) { const r = num(field(m, ['vermogen_massarijklaar'])), mr = num(field(m, ['massa_rijklaar'])) || mass; if (r != null && r > 0 && mr) kw = r * mr; }
+    if (kw != null) kw = Math.round(kw);
+    return { status: 'ok', profile: {
+      make, model, pt: f ? f.pt : null, fuel: f ? f.label : null, plugin: f ? f.plugin : null, seats,
+      size: cm != null ? sizeFromLength(cm) : mass != null ? sizeFromMass(mass) : null, lengthCm: cm, massKg: mass != null ? Math.round(mass) : null,
+      kw, power: powerLevel(kw)
+    } };
+  }
+  const plateUsable = p => !!(p && (p.pt || p.seats || p.size || p.power));
+
+  // Look a plate up in the visitor's browser. The plate is only put in the two request URLs: it is not logged,
+  // stored or kept. fetchFn can be injected for tests. Resolves { status: 'ok'|'invalid'|'notfound'|'notcar'|'error', ... }.
+  function lookupPlate(input, fetchFn, opts) {
+    const plate = normalisePlate(input);
+    if (!plate) return Promise.resolve({ status: 'invalid' });
+    const f = fetchFn || (typeof fetch === 'function' ? fetch : null);
+    if (!f) return Promise.resolve({ status: 'error' });
+    const ms = (opts && opts.timeout) || 10000;
+    const get = url => {
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = ctl ? setTimeout(() => ctl.abort(), ms) : null;
+      const done = () => { if (timer) clearTimeout(timer); };
+      return Promise.resolve().then(() => f(url, { signal: ctl ? ctl.signal : undefined, referrerPolicy: 'no-referrer', cache: 'no-store', credentials: 'omit' }))
+        .then(r => { if (!r || !r.ok) throw new Error('http'); return r.json(); })
+        .then(j => { if (!Array.isArray(j)) throw new Error('shape'); return j; })
+        .then(j => { done(); return j; }, e => { done(); throw e; });
+    };
+    const q = '?kenteken=' + encodeURIComponent(plate);
+    return Promise.all([get(RDW.main + q + '&$limit=1'), get(RDW.fuel + q).catch(() => null)])
+      .then(r => plateProfile(r[0], r[1]), () => ({ status: 'error' }));
+  }
+
+  // ---------- PLATE-BASED SCORING ----------
+  // The plate profile feeds the normal scoring as one extra weighted term, so there is no second model.
+  //   similar: the profile is the target (powertrain, size, seats, power); closer cars score higher.
+  //   change:  the profile is a baseline to move away from, but only on the dimensions the person picked.
+  //   inspiration (or no plate): ignored completely.
+  const PTD = { bev: 0, phev: 1, hev: 2, mhev: 3, ice: 4 };       // distance along the powertrain scale
+  const CLOSE_PT = [1, .7, .4, .15, 0], CLOSE_STEP = [1, .6, .25, 0, 0, 0, 0, 0];
+  const AWAY_PT = [0, .35, .67, 1, 1];
+  const plateActive = a => (a && a.plate && (a.plateMode === 'similar' || a.plateMode === 'change')) ? a.plate : null;
+  const plateName = p => (p.make + ' ' + p.model).trim();
+  const listOf = x => x.length > 1 ? x.slice(0, -1).join(', ') + ' and ' + x[x.length - 1] : x[0];
+  const plain = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  function sameModel(car, p) {
+    if (!p || !p.make || !p.model || plain(car.brand) !== plain(p.make)) return false;
+    const a = plain(car.model), b = plain(p.model);
+    return !!a && !!b && (a === b || a.indexOf(b + ' ') === 0 || b.indexOf(a + ' ') === 0);
+  }
+  function makePlateScorer(a) {
+    const p = plateActive(a);
+    if (!p) return null;
+    const mode = a.plateMode, name = plateName(p);
+    const sel = mode === 'change' ? (Array.isArray(a.change) ? a.change : []) : null;
+    const defs = [];
+    const dPt = car => PTD[car.pt] - PTD[p.pt];
+    if (mode === 'similar') {
+      if (p.pt) defs.push({ w: 2.0, f: car => { const d = Math.abs(dPt(car)); return { s: CLOSE_PT[d], ph: d === 0 ? 'the same kind of powertrain' : '' }; } });
+      if (p.size) defs.push({ w: 1.0, f: car => { const d = Math.abs(car.size - p.size); return { s: CLOSE_STEP[d], ph: d === 0 ? 'a similar size' : '' }; } });
+      if (p.seats) defs.push({ w: 0.8, f: car => { const d = Math.abs(car.seats - p.seats); return { s: CLOSE_STEP[d], ph: d === 0 ? 'the same number of seats' : '' }; } });
+      if (p.power) defs.push({ w: 0.8, f: car => { const d = Math.abs(car.drive - p.power); return { s: CLOSE_STEP[d], ph: d === 0 ? 'a similar level of performance' : '' }; } });
+    } else {
+      const has = k => sel.indexOf(k) > -1;
+      if (p.pt && has('pt')) defs.push({ w: 1.2, f: car => { const d = Math.abs(dPt(car)); return { s: AWAY_PT[d], ph: d >= 2 ? 'a different kind of powertrain' : '' }; } });
+      if (p.size && has('size+')) defs.push({ w: 1, f: car => { const d = car.size - p.size; return { s: clamp(d / 2, 0, 1), ph: d >= 1 ? 'a bigger car' : '' }; } });
+      if (p.size && has('size-')) defs.push({ w: 1, f: car => { const d = p.size - car.size; return { s: clamp(d / 2, 0, 1), ph: d >= 1 ? 'a smaller car' : '' }; } });
+      if (p.seats && has('seats+')) defs.push({ w: 1, f: car => { const d = car.seats - p.seats; return { s: d > 0 ? clamp(.4 + .3 * d, 0, 1) : 0, ph: d >= 1 ? 'more seats' : '' }; } });
+      if (p.seats && has('seats-')) defs.push({ w: 1, f: car => { const d = p.seats - car.seats; return { s: d > 0 ? clamp(.4 + .3 * d, 0, 1) : 0, ph: d >= 1 ? 'fewer seats' : '' }; } });
+      if (p.power && has('power+')) defs.push({ w: 1, f: car => { const d = car.drive - p.power; return { s: clamp(d / 2, 0, 1), ph: d >= 1 ? 'a livelier drive' : '' }; } });
+      if (p.power && has('power-')) defs.push({ w: 1, f: car => { const d = p.power - car.drive; return { s: clamp(d / 2, 0, 1), ph: d >= 1 ? 'a calmer drive' : '' }; } });
+    }
+    if (!defs.length) return null;
+    return { w: mode === 'similar' ? 2.8 : 2.4, mode, name, fit: car => {
+      let n = 0, d = 0; const ph = [];
+      defs.forEach(x => { const r = x.f(car); n += x.w * r.s; d += x.w; if (r.ph) ph.push(r.ph); });
+      const same = sameModel(car, p);
+      return { s: n / d, same, note: ph.length ? (mode === 'similar' ? 'Close to your ' : 'A change from your ') + name + ': ' + listOf(ph) + '.' : '' };
+    } };
+  }
+  // What can be changed, given what the plate told us. Options that cannot apply (a bigger car than the largest size) are left out.
+  function changeOptions(p) {
+    const o = [];
+    if (!p) return o;
+    if (p.pt) o.push({ v: 'pt', label: 'A different powertrain', sub: p.fuel ? 'Yours: ' + p.fuel.toLowerCase() : '' });
+    const len = p.lengthCm ? 'Yours is about ' + (p.lengthCm / 100).toFixed(1) + ' m long' : '';
+    if (p.size && p.size < 5) o.push({ v: 'size+', ex: 'size', label: 'A bigger car', sub: len });
+    if (p.size && p.size > 1) o.push({ v: 'size-', ex: 'size', label: 'A smaller car', sub: len });
+    const st = p.seats ? 'Yours has ' + p.seats + ' seats' : '';
+    if (p.seats && p.seats < 7) o.push({ v: 'seats+', ex: 'seats', label: 'More seats', sub: st });
+    if (p.seats && p.seats > 4) o.push({ v: 'seats-', ex: 'seats', label: 'Fewer seats', sub: st });
+    const pw = p.kw ? 'Yours has about ' + p.kw + ' kW' : '';
+    if (p.power && p.power < 5) o.push({ v: 'power+', ex: 'power', label: 'More power', sub: pw });
+    if (p.power && p.power > 1) o.push({ v: 'power-', ex: 'power', label: 'Calmer, less power', sub: pw });
+    return o;
+  }
+
+  // ---------- RECOMMEND ----------
+  function recommend(a) {
+    const own = a.own || 'buy';
+    const budgetMax = CAPS[own][a.budget];
+    const ref = isFinite(budgetMax) ? budgetMax : OPEN_REF[own];
+    const removed = { budget: 0, seats: 0, power: 0, safety: 0, brand: 0 };
+    const pool = [];
+    const seatsNeed = a.people === 'p7' ? 7 : a.people === 'p5' ? 5 : 0;
+
+    for (const car of CARS) {
+      if (isFinite(budgetMax) && burden(car, own) > budgetMax * 1.05) { removed.budget++; continue; }
+      if (car.seats < seatsNeed) { removed.seats++; continue; }
+      if (a.power === 'bev' && car.pt !== 'bev') { removed.power++; continue; }
+      if (a.power === 'simple' && (car.pt === 'bev' || car.pt === 'phev')) { removed.power++; continue; }
+      if (a.safety === 'must5' && car.ncap !== 5) { removed.safety++; continue; }
+      if (a.brand === 'known' && car.nb) { removed.brand++; continue; }
+      pool.push(car);
+    }
+    const blockerLabels = { budget: 'your budget', seats: 'the number of seats you need', power: 'your powertrain choice', safety: 'the 5-star safety requirement', brand: 'the "known brands only" setting' };
+    const blockers = Object.keys(removed).sort((x, y) => removed[y] - removed[x]).filter(k => removed[k] > 0).slice(0, 2).map(k => blockerLabels[k]);
+
+    // How far a car sits outside each hard limit (0 = inside it). Used only when fewer than three cars pass every limit.
+    const PT_STEP = { bev: 0, phev: 1, hev: 2, mhev: 3, ice: 4 }; // distance from fully electric
+    const gaps = car => {
+      const over = isFinite(budgetMax) ? burden(car, own) / budgetMax - 1 : -1;
+      return {
+        price: over > 0.05 ? over : 0,   // outside the budget (it has a 5% tolerance)
+        over: Math.max(0, over),         // how far over, for ranking
+        seats: Math.max(0, seatsNeed - car.seats),
+        power: a.power === 'bev' ? PT_STEP[car.pt] : a.power === 'simple' ? (car.pt === 'bev' ? 2 : car.pt === 'phev' ? 1 : 0) : 0,
+        safety: a.safety === 'must5' && car.ncap !== 5 ? (car.ncap == null ? 2 : 5 - car.ncap) : 0,
+        brand: a.brand === 'known' && car.nb ? 1 : 0
+      };
+    };
+    const GAP_KEYS = ['price', 'seats', 'power', 'safety', 'brand'];
+    const nMiss = (g, skip) => GAP_KEYS.reduce((n, k) => n + (k !== skip && g[k] > 0 ? 1 : 0), 0);
+    const gapSum = g => g.over + g.power / 4 + g.seats / 3 + g.safety / 4 + g.brand;
+    const missesFor = (car, g) => {
+      const m = [];
+      if (g.price > 0) {
+        const d = burden(car, own) - budgetMax;
+        m.push(own === 'buy' ? `About ${eur(Math.round(d / 100) * 100)} above your top price of ${eur(budgetMax)}.`
+          : own === 'lease' ? `About ${burdenLabel(d, 'lease')} above your limit of ${eur(budgetMax)} a month (our estimate).`
+          : `About ${burdenLabel(d, 'company')} more bijtelling than your limit of ${eur(budgetMax)} a month.`);
+      }
+      if (g.seats > 0) m.push(`Seats ${car.seats}, and you need ${seatsNeed}.`);
+      if (g.power > 0) m.push(a.power === 'bev' ? `${PT_LABEL[car.pt]}, and you asked for fully electric only.`
+        : car.pt === 'bev' ? 'Fully electric, and you asked for petrol or a hybrid that never needs a plug.'
+        : 'A plug-in hybrid, and you asked for a car that never needs a plug.');
+      if (g.safety > 0) m.push(car.ncap == null ? 'We have no Euro NCAP star rating on file, and you asked for 5 stars.'
+        : `Euro NCAP gave it ${car.ncap} star${car.ncap === 1 ? '' : 's'}, and you asked for 5.`);
+      if (g.brand > 0) m.push('A newer brand in the Netherlands, and you asked for brands you already know.');
+      return m;
+    };
+
+    const ch = a.charging;
+    const prio = a.priorities || [];
+    const boost = k => (prio.includes(k) ? 1.8 : 1);
+    const W = {
+      cost: 1.4 * boost('cost'),
+      space: 1.1 * boost('space'),
+      range: 1.0 * boost('range'),
+      pt: 0.9 * (prio.includes('range') ? 1.4 : 1),
+      body: 0.8,
+      parking: a.parking === 'tight' ? 1.4 : 0.7,
+      safety: (a.safety === 'important' ? 1.8 : a.safety === 'must5' ? 0.5 : 0.5) * boost('safety'),
+      feel: 0.7 * boost('enjoy'),
+      tech: 0.4 * boost('tech'),
+      brand: 0.5
+    };
+    if (a.safety === 'important' || prio.includes('safety')) W.safety = Math.max(W.safety, 1.4 * boost('safety'));
+    const PS = makePlateScorer(a); // null unless a confirmed plate is in 'similar' or 'change' mode
+    if (PS) W.plate = PS.w;
+
+    const peopleNeed = { p2: .2, p5: .6, p7: .85 }[a.people];
+    const cargoNeed = { low: .2, some: .5, lots: .85 }[a.cargo];
+    const needSpace = Math.max(peopleNeed, cargoNeed);
+
+    let req = { rare: 200, few: 300, often: 420 }[a.trips];
+    if (a.use === 'motorway') req += 50;
+    if (a.use === 'city') req *= 0.75;
+    if (ch !== 'home') req += 40;
+
+    const scoreCar = car => {
+      const S = {};
+      // price and running cost
+      const priceS = clamp(1 - (burden(car, own) / ref) * 0.75, 0.15, 1);
+      let run = { bev: { home: .9, public: .6, none: .35 }[ch], phev: { home: .7, public: .3, none: .25 }[ch], hev: .72, mhev: .55, ice: .4 }[car.pt];
+      if (a.km === 'k25' || a.km === 'k25p') {
+        if (car.pt === 'bev' && ch === 'home') run += .05;
+        if (car.pt === 'ice') run -= .1;
+        if (car.pt === 'mhev') run -= .05;
+      }
+      S.cost = .6 * priceS + .4 * clamp(run, 0, 1);
+
+      const sp = car.space / 5;
+      S.space = clamp(1 - Math.max(0, needSpace - sp) * 1.8, 0, 1);
+
+      if (car.pt === 'bev') S.range = car.range >= req ? 1 : Math.pow(car.range / req, 2);
+      else if (car.pt === 'phev') S.range = ch === 'home' ? (a.trips === 'often' ? .9 : .85) : .5;
+      else S.range = .92;
+
+      S.pt = { bev: { home: 1, public: .72, none: .3 }[ch], phev: { home: .9, public: .45, none: .35 }[ch], hev: .85, mhev: .75, ice: .65 }[car.pt];
+      S.body = bodyFit(a.body, car);
+      S.parking = a.parking === 'tight' ? ({ 1: 1, 2: .85, 3: .5, 4: .25, 5: .1 }[car.size]) : 1;
+      S.safety = car.ncap == null ? .5 : ({ 5: 1, 4: .75, 3: .45, 2: .2, 1: .02 }[car.ncap]);
+      S.feel = a.feel === 'comfort' ? car.comfort / 5 : a.feel === 'drive' ? car.drive / 5 : (car.comfort + car.drive) / 10;
+      S.tech = a.tech === 'lots' ? car.tech / 5 : a.tech === 'simple' ? 1 - (car.tech - 1) / 6 : .6;
+      S.brand = a.brand === 'curious' ? (car.nb ? 1 : .75) : a.brand === 'proven' ? (car.nb ? (car.ncap === 5 ? .85 : .45) : 1) : 1;
+
+      let plate = null;
+      if (PS) { plate = PS.fit(car); S.plate = plate.s; }
+
+      let num = 0, den = 0;
+      for (const k in W) { num += W[k] * S[k]; den += W[k]; }
+      let score = (num / den) * 100;
+
+      return { car, S, score, plate };
+    };
+    const scored = pool.map(scoreCar);
+
+    scored.sort((x, y) => y.score - x.score);
+
+    // pick three: two best fits from different brands, then a wildcard
+    const picks = [];
+    const first = scored[0];
+    if (first) picks.push(first);
+    const second = first && (scored.find(s => s.car.brand !== first.car.brand) || scored[1]);
+    if (second && second !== first) picks.push(second);
+
+    let wildcard = null, wildNote = '';
+    if (picks.length >= 2) {
+      const brands = picks.map(p => p.car.brand);
+      const rest = scored.filter(s => !picks.includes(s) && !brands.includes(s.car.brand));
+      const near = rest.filter(s => s.score >= first.score - 14);
+      const newCount = picks.filter(p => p.car.nb).length;
+      const ptSet = picks.map(p => p.car.pt);
+      let cand = null;
+      if (newCount === 0 && a.brand !== 'known') {
+        cand = near.find(s => s.car.nb);
+        if (cand) wildNote = 'A newer brand that solves the same brief.';
+      } else if (newCount > 0) {
+        cand = near.find(s => !s.car.nb);
+        if (cand) wildNote = 'An established brand that solves the same brief.';
+      }
+      if (!cand) {
+        cand = near.find(s => !ptSet.includes(s.car.pt));
+        if (cand) wildNote = 'A different kind of powertrain for the same brief.';
+      }
+      if (!cand) {
+        cand = near.find(s => s.car.origin !== picks[0].car.origin && s.car.origin !== picks[1].car.origin);
+        if (cand) wildNote = 'From a different part of the world, with a similar fit.';
+      }
+      if (!cand) { cand = rest[0]; if (cand) wildNote = 'The next-best fit from another brand.'; }
+      if (cand) wildcard = cand;
+    }
+    if (wildcard) picks.push(wildcard);
+
+    const exact = picks.length;
+    const result = picks.map((p, i) => {
+      const role = i === 0 ? 'Best fit' : i === 1 ? 'Strong second' : 'Wildcard';
+      return Object.assign({ role, roleNote: i === 2 ? wildNote : '', misses: [], close: false }, explain(p, a, { budgetMax, req, needSpace, own }));
+    });
+
+    // Fewer than three cars pass every limit: add the closest near-misses, from brands not already shown.
+    // First the closest on price (the other limits kept as far as possible), then the closest on powertrain
+    // (budget and the other limits kept), then the closest overall. A slot only exists when that limit is set;
+    // a card is only labelled 'on price' or 'on powertrain' when it really misses that limit.
+    if (result.length < 3) {
+      const SLOTS = [];
+      if (isFinite(budgetMax)) SLOTS.push({ dim: 'price', role: 'Closest on price',
+        cmp: (x, y) => nMiss(x.g, 'price') - nMiss(y.g, 'price') || x.g.over - y.g.over || y.s.score - x.s.score });
+      if (a.power !== 'open') SLOTS.push({ dim: 'power', role: 'Closest on powertrain',
+        cmp: (x, y) => nMiss(x.g, 'power') - nMiss(y.g, 'power') || x.g.power - y.g.power || y.s.score - x.s.score });
+      const overall = { dim: null, cmp: (x, y) => nMiss(x.g) - nMiss(y.g) || gapSum(x.g) - gapSum(y.g) || y.s.score - x.s.score };
+      SLOTS.push(overall, overall, overall);
+      const everyCar = CARS.map(car => ({ s: scoreCar(car), g: gaps(car) }));
+      const brandsShown = new Set(picks.map(p => p.car.brand));
+      let usedOverall = false;
+      for (const slot of SLOTS) {
+        if (result.length >= 3) break;
+        const best = everyCar.filter(e => !brandsShown.has(e.s.car.brand)).sort(slot.cmp)[0];
+        if (!best) continue;
+        brandsShown.add(best.s.car.brand);
+        let role = slot.dim && best.g[slot.dim] > 0 ? slot.role : (usedOverall ? 'Also close' : 'Closest overall');
+        if (!(slot.dim && best.g[slot.dim] > 0)) usedOverall = true;
+        result.push(Object.assign({ role, roleNote: '', misses: missesFor(best.s.car, best.g), close: true },
+          explain(best.s, a, { budgetMax, req, needSpace, own, g: best.g })));
+      }
+    }
+    return { empty: false, picks: result, removed, poolSize: pool.length, total: CARS.length, exact, fallback: exact < 3, blockers };
+  }
+
+  function explain(p, a, ctx) {
+    const car = p.car, S = p.S;
+    const fits = [], trade = [];
+    const pricePt = (car.pc === 'i' ? '≈' : '') + eur(car.price);
+
+    const cand = [];
+    const add = (k, w, text) => cand.push({ k, w, text });
+
+    // budget
+    if (isFinite(ctx.budgetMax)) {
+      const bu = burden(car, ctx.own);
+      const money = ctx.own === 'buy' ? pricePt : ctx.own === 'lease' ? `About ${burdenLabel(bu, 'lease')} (our estimate)` : `About ${burdenLabel(bu, 'company')} bijtelling`;
+      if (bu <= ctx.budgetMax * .85) add('cost', 1.4 * S.cost, `${money} leaves room in your budget.`);
+      else if (bu <= ctx.budgetMax) add('cost', 1.2 * S.cost, `${money} fits your budget.`);
+    } else if (S.cost > .5) add('cost', 1.2 * S.cost, `${pricePt}, good value for what you get.`);
+
+    // powertrain
+    if (car.pt === 'bev' && a.charging === 'home') add('pt', 1.1 * S.pt, 'Charging at home keeps running costs low.');
+    if (car.pt === 'bev' && a.charging === 'public') add('pt', .8, 'Works with a public charge point near home.');
+    if (car.pt === 'phev' && a.charging === 'home') add('pt', 1.0, 'Electric for daily trips, petrol for the long ones.');
+    if (car.pt === 'hev' || car.pt === 'mhev') add('pt', .75, 'No plug needed, so no charging to plan.');
+    if (car.pt === 'bev' && S.range >= 1) add('range', 1.0, `About ${car.range} km of range covers your trips.`);
+
+    // space
+    if (S.space >= .9 && ctx.needSpace >= .6) add('space', 1.0 * S.space, 'Enough room for your people and your stuff.');
+    if (S.parking >= .85 && a.parking === 'tight') add('parking', .9, 'Compact enough for tight streets.');
+    if (S.body >= .95 && a.body !== 'any') add('body', .6, `The shape you asked for: ${BODY_LABEL[car.body].toLowerCase()}.`);
+    if (car.ncap === 5) add('safety', 1.0, `Euro NCAP 5 stars${car.ncapYr ? ' (' + car.ncapYr + ')' : ''}.`);
+    if (a.brand === 'curious' && car.nb) add('brand', .7, 'A newer brand, as you were curious about.');
+    if (a.feel === 'comfort' && car.comfort >= 4) add('feel', .7, 'Rated high for comfort.');
+    if (a.feel === 'drive' && car.drive >= 4) add('feel', .7, 'Rated high for driving fun.');
+    if (a.tech === 'lots' && car.tech >= 4) add('tech', .6, 'Strong on screens and features.');
+    if (a.tech === 'simple' && car.tech <= 2) add('tech', .6, 'Simple dashboard without too many gadgets.');
+
+    // the plate (similar or change): what links this car to the one the person drives now
+    const pa = plateActive(a);
+    if (pa && p.plate) {
+      if (p.plate.same && a.plateMode === 'similar') add('plate', 2.0, 'The current version of your ' + plateName(pa) + '.');
+      else if (p.plate.note) add('plate', 1.7, p.plate.note);
+    }
+
+    cand.sort((x, y) => y.w - x.w);
+    const seen = new Set();
+    for (const c of cand) {
+      if (seen.has(c.k)) continue;
+      seen.add(c.k);
+      fits.push(c.text);
+      if (fits.length === 3) break;
+    }
+
+    // trade-offs
+    if (isFinite(ctx.budgetMax) && burden(car, ctx.own) > ctx.budgetMax && !(ctx.g && ctx.g.price > 0)) trade.push('Slightly above your budget.');
+    if (ctx.own === 'company' && car.pt !== 'bev') trade.push('Not electric, so the full 22% bijtelling applies.');
+    if (car.flag) trade.push(car.flag);
+    if (pa && p.plate && p.plate.same && a.plateMode === 'change') trade.push('This is the same model as your current ' + plateName(pa) + '.');
+    if (ctx.g && ctx.g.safety > 0) { /* already listed under 'misses' */ }
+    else if (car.ncap == null) trade.push('We have no Euro NCAP star rating on file for this exact model. Check euroncap.com before you decide.');
+    else if (car.ncap <= 3) trade.push(`Euro NCAP gave it only ${car.ncap} star${car.ncap === 1 ? '' : 's'}${car.ncapYr ? ' (' + car.ncapYr + ')' : ''}.`);
+    if (car.pt === 'bev' && S.range < .8) trade.push(`About ${car.range} km of range is short for how far you drive.`);
+    if (car.pt === 'bev' && a.charging === 'none') trade.push('Without reliable charging you would depend on fast chargers, which cost more per km.');
+    if (car.pt === 'phev' && a.charging !== 'home') trade.push('A plug-in hybrid saves least when you cannot charge at home.');
+    if (S.space < .7) trade.push('Tight on space for what you described.');
+    if (a.parking === 'tight' && S.parking < .5) trade.push('Bigger than ideal for tight parking.');
+    if (car.nb) trade.push('Newer brand in the Netherlands: ask about dealer network, service and resale.');
+    if (car.pc === 'i') trade.push('We could not confirm this price on the manufacturer\u2019s own site. Check it with a dealer.');
+
+    const monthLabel = ctx.own === 'company' ? `≈ ${burdenLabel(burden(car, 'company'), 'company')} bijtelling` : '';
+    return { car, score: Math.round(p.score), fits, trade: trade.slice(0, 4), priceLabel: pricePt, monthLabel, own: ctx.own, modelUrl: MODEL[car.id] || null, lease: ctx.own === 'lease' ? leaseInfo(car) : null };
+  }
+
+  // Rebuild result cards from car ids alone (used by shared links). No scoring, so no fit reasons.
+  function describe(ids, own) {
+    const byId = new Map(CARS.map(c => [c.id, c]));
+    const seen = new Set(), out = [];
+    for (const id of ids) {
+      const car = byId.get(id);
+      if (!car || seen.has(id)) return null;
+      seen.add(id);
+      out.push({ car, score: null, fits: [], trade: [], misses: [],
+        priceLabel: (car.pc === 'i' ? '\u2248' : '') + eur(car.price),
+        monthLabel: own === 'company' ? `\u2248 ${burdenLabel(burden(car, 'company'), 'company')} bijtelling` : '',
+        own, modelUrl: MODEL[car.id] || null, lease: own === 'lease' ? leaseInfo(car) : null });
+    }
+    return out;
+  }
+
+  const API = { CARS, QUESTIONS: Q, budgetView, recommend, describe, setLease, leaseInfo, getLease: () => LEASE, eur, PT_LABEL, BODY_LABEL, BUDGET_LABEL, normalisePlate, lookupPlate, plateProfile, plateUsable, changeOptions };
+  root.ShortList = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+
+</script>
+<script>
+/* Find my next car: matching. Pure JS, no DOM. Needs the Short List engine (CARS, describe) and the review data. */
+(function (root) {
+  'use strict';
+
+  // Launched in the Netherlands since mid 2025 (new model or new generation). Same definition as the quiz data.
+  const RECENT = ['raval','pandaev','twingo','r4','ioniq3','b05','b10','ix3','ev2','chrplus','tayron','tayron7','cla',
+    'omoda5hev','omoda5ev','omoda9','jaecoo5','jaecoo7','jaecoo8','jaecoo8s7','s05','s07','e2','e5','starray','tiggo4','tiggo7','tiggo8',
+    'atto2dmi','dolphing','atto3evo','seal6','seal6t','mgs5','mgs6','mgs9','im5','im6','mghs','mg4urban','b03x','b10r','p7plus','zeekr7x','zeekr7gt',
+    'lynk08','ev4','k4','seltos','ioniq9','epiq','idpolo','c5hev','c5ev','c5phev','urbancruiser','bz4xt','evitara','cx6e','cx5','mazda6e',
+    'es90','ex60','glc','clasb','gla','i3','a390','gv60','gv70','g80','compasshev','compassphev','compassev','leaf','micra','actyon'];
+
+  // One independent review per model: Dutch-language, published by a title or consumer body that is not the manufacturer.
+  // Each URL was returned by a search for the model and (for Autozine B05) opened. Models without an entry are not offered yet.
+  const REVIEWS = {
+    raval:   { url: 'https://www.autoreview.nl/nieuws/id/37228/test-cupra-raval', source: 'AutoReview' },
+    pandaev: { url: 'https://www.test-aankoop.be/mobiliteit/auto-s/vergelijker-elektrische-auto-plug-in-hybride/fiat-grande-panda-electric/67/121501', source: 'Test-Aankoop (consumer organisation)' },
+    b05:     { url: 'https://www.autozine.nl/leapmotor/b05/autotest', source: 'Autozine' },
+    b10:     { url: 'https://www.autozine.nl/leapmotor/b10/autotest', source: 'Autozine' },
+    chrplus: { url: 'https://www.autozine.nl/toyota/c-hr-plus/autotest', source: 'Autozine' },
+    ev2:     { url: 'https://topgear.nl/autotest/kia-ev2-standard-range-plus-advanced-2026-review/', source: 'Top Gear NL' },
+    ev4:     { url: 'https://www.autoblog.nl/nieuws/kia-ev4-gewaagd-uiterlijk-maakt-het-een-gedurfde-keuze-test-7188897', source: 'Autoblog' },
+    cla:     { url: 'https://topgear.nl/autotest/mercedes-cla-220-4matic-amg-line-2025-review/', source: 'Top Gear NL' },
+    e5:      { url: 'https://www.autozine.nl/geely/e5/autotest', source: 'Autozine' },
+    zeekr7x: { url: 'https://www.autozine.nl/zeekr/7x/autotest', source: 'Autozine' },
+    mgs5:    { url: 'https://www.autozine.nl/mg/s5/autotest', source: 'Autozine' },
+    mgs6:    { url: 'https://www.autozine.nl/mg/s6/autotest', source: 'Autozine' },
+    cx6e:    { url: 'https://www.autozine.nl/mazda/cx-6e/autotest', source: 'Autozine' },
+    ioniq9: { url: 'https://www.whatcar.com/hyundai/ioniq-9/estate/review/n27484', source: 'What Car?' },
+    c5hev: { url: 'https://www.autoexpress.co.uk/citroen/c5-aircross/368505/new-citroen-c5-aircross-hybrid-145-review-suv-puts-passengers-first', source: 'Auto Express' },
+    c5ev: { url: 'https://www.honestjohn.co.uk/citroen/e-c5-aircross', source: 'Honest John' },
+    c5phev: { url: 'https://www.rac.co.uk/drive/car-reviews/citroen/c5/c5-aircross/', source: 'RAC Drive', how: 'covers the C5 Aircross range' },
+    seltos: { url: 'https://www.autoexpress.co.uk/kia/seltos/369624/new-kia-seltos-2026-review-ticks-all-right-suv-boxes', source: 'Auto Express' },
+    bz4xt: { url: 'https://www.whatcar.com/toyota/bz4x-touring/estate/review/n29019', source: 'What Car?' },
+    cx5: { url: 'https://www.autoexpress.co.uk/mazda/cx-5/357250/new-mazda-cx-5-2026-review-spacious-suv-step-wrong-direction', source: 'Auto Express' },
+    epiq: { url: 'https://www.whatcar.com/skoda/epiq/estate/review/n29034', source: 'What Car?' },
+    idpolo: { url: 'https://www.autoexpress.co.uk/volkswagen/polo/368526/new-volkswagen-id-polo-2026-review-seriously-impressive-small-ev', source: 'Auto Express' },
+    mghs: { url: 'https://www.carexpert.com.au/car-reviews/2026-mg-hs-hybrid-review', source: 'CarExpert (Australia)' },
+    im5: { url: 'https://www.autoexpress.co.uk/mg/367423/mg-im5-review', source: 'Auto Express' },
+    compasshev: { url: 'https://www.whatcar.com/jeep/compass/4x4/12-e-hybrid-first-edition-5dr-dct/107960', source: 'What Car?', how: 'tests the hybrid' },
+    compassphev: { url: 'https://www.whatcar.com/jeep/compass/4x4/12-e-hybrid-first-edition-5dr-dct/107960', source: 'What Car?', how: 'tests the hybrid, not this version' },
+    compassev: { url: 'https://www.whatcar.com/jeep/compass/4x4/12-e-hybrid-first-edition-5dr-dct/107960', source: 'What Car?', how: 'tests the hybrid, not this version' },
+    gv60: { url: 'https://www.autoexpress.co.uk/genesis/gv60/360018/genesis-gv60-review', source: 'Auto Express' },
+    glc: { url: 'https://www.autoexpress.co.uk/mercedes/glc/369219/new-mercedes-glc-electric-2026-review-refined-and-packed-tech', source: 'Auto Express' },
+    tiggo8: { url: 'https://www.electrifying.com/reviews/chery-reviews/tiggo-8/review', source: 'Electrifying' },
+    s07: { url: 'https://www.autoexpress.co.uk/changan/367836/new-changan-deepal-s07-2025-review-smart-dull-chinese-suv', source: 'Auto Express' },
+    s05: { url: 'https://www.electrive.net/2025/09/21/erste-fahrt-im-deepal-s05-dieser-newcomer-aus-china-macht-sehr-viel-richtig/', source: 'electrive', how: 'first drive, in German' },
+    omoda9: { url: 'https://www.carmagazine.co.uk/car-reviews/omoda/9-suv/', source: 'CAR Magazine' },
+    omoda5hev: { url: 'https://www.autoexpress.co.uk/omoda/5/362855/new-omoda-5-prototype-review-establishment-beating-suv', source: 'Auto Express', how: 'prototype drive' },
+    omoda5ev: { url: 'https://www.autoexpress.co.uk/omoda/5/362855/new-omoda-5-prototype-review-establishment-beating-suv', source: 'Auto Express', how: 'prototype drive of the Omoda 5' },
+    lynk08: { url: 'https://www.anwb.nl/auto/tests/auto-reviews/detail/cbfc56d55eda333e8ce565db5e54f9ff', source: 'ANWB' },
+    twingo: { url: 'https://www.adac.de/rund-ums-fahrzeug/autokatalog/marken-modelle/renault/renault-twingo-electric-test/', source: 'ADAC (German motoring club)', how: 'in German' },
+    r4: { url: 'https://www.autoexpress.co.uk/renault/4/369497/long-term-test-renault-4-e-tech-iconic', source: 'Auto Express', how: 'long-term test' },
+    ioniq3: { url: 'https://de.motor1.com/news/811009/hyundai-ioniq3-61kwh-test/', source: 'Motor1 Germany', how: 'in German' },
+    ix3: { url: 'https://www.autozeitung.de/bmw-ix3-fahrbericht-video-209817.html', source: 'Auto Zeitung', how: 'in German' },
+    tayron: { url: 'https://www.weekend.at/motor/test-der-tayron-ist-mister-big', source: 'Weekend (Austria)', how: 'in German' },
+    tayron7: { url: 'https://www.weekend.at/motor/test-der-tayron-ist-mister-big', source: 'Weekend (Austria)', how: 'in German; tests the standard Tayron' },
+    jaecoo7: { url: 'https://www.auto-motor-und-sport.de/marken-modelle/jaecoo/7/tests/', source: 'Auto Motor und Sport', how: 'in German' },
+    starray: { url: 'https://www.autoexpress.co.uk/geely/starray/368720/new-geely-starray-2026-review-notably-cheap-and-reasonably-cheerful', source: 'Auto Express' },
+    seal6: { url: 'https://www.autoexpress.co.uk/byd/367696/new-byd-seal-6-2025-review-talented-estate-should-have-bmw-worried', source: 'Auto Express' },
+    seal6t: { url: 'https://www.autoexpress.co.uk/byd/367696/new-byd-seal-6-2025-review-talented-estate-should-have-bmw-worried', source: 'Auto Express', how: 'tests the Seal 6 estate' },
+    atto2dmi: { url: 'https://www.automobile.at/magazin/786839', source: 'Automobile.at', how: 'in German' },
+    atto3evo: { url: 'https://autotijd.be/rijtesten/byd/atto-3-evo/test-byd-atto-3-evo-veel-meer-dan-een-facelift-2026', source: 'Autotijd (Belgium)' },
+    b03x: { url: 'https://www.autocar.co.uk/node/365720', source: 'Autocar', how: 'first drive' },
+    b10r: { url: 'https://www.autotrader.co.uk/content/car-reviews/leapmotor-b10-hybrid-ev-review-2026', source: 'Autotrader' },
+    p7plus: { url: 'https://www.autohaus.de/nachrichten/autohandel/xpeng-p7-im-test-der-leise-riese-3909833', source: 'Autohaus', how: 'in German' },
+    zeekr7gt: { url: 'https://www.autozeitung.de/zeekr-7gt-2026-fahrbericht-300998.html', source: 'Auto Zeitung', how: 'in German' },
+    k4: { url: 'https://de.motor1.com/photos/919420/kia-k4-2026-im-test/', source: 'Motor1 Germany', how: 'in German' },
+    urbancruiser: { url: 'https://www.autotrader.co.uk/content/car-reviews/toyota-urban-cruiser-review-2025', source: 'Autotrader' },
+    evitara: { url: 'https://www.autozine.co.uk/suzuki/e-vitara/61-kwh-4wd/review', source: 'Autozine (English edition)' },
+    mazda6e: { url: 'https://www.autoexpress.co.uk/road-tests/367331/new-mazda-6e-2025-review-fine-family-ev-theres-catch', source: 'Auto Express' },
+    es90: { url: 'https://www.auto.it/foto/anteprime/primo-test/2026/03/09-8668095/volvo_es90_il_test', source: 'Auto.it', how: 'first test, in Italian' },
+    leaf: { url: 'https://topgear.nl/nissan/leaf/autotests/', source: 'Top Gear NL', how: 'test overview, may include older Leaf generations' },
+    micra: { url: 'https://topgear.nl/nissan/micra/autotests/', source: 'Top Gear NL', how: 'test overview, may include older Micra generations' }
+  };
+
+  // Brand home pages, used only when no model page is on file. Geely, Chery and Alpine are the global sites: a Dutch site was not found.
+  const BRAND_HOME = { mg: 'https://www.mgmotor.nl', xpeng: 'https://www.xpeng.com/nl', 'lynk co': 'https://www.lynkco.com', geely: 'https://www.geely.com', chery: 'https://www.cheryinternational.com', alpine: 'https://www.alpinecars.com' };
+  const PT_RANK = { ice: 0, mhev: 1, hev: 2, phev: 3, bev: 4 };
+  const plain = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const ALIAS = { vw: 'volkswagen', mercedes: 'mercedes benz', 'mercedes benz': 'mercedes benz', citroen: 'citroen' };
+  function brandKey(s) { let k = plain(s); k = ALIAS[k] || k; return k.replace(/ (corporation|motors|group)$/, ''); }
+  function sameBrand(a, b) {
+    const x = brandKey(a), y = brandKey(b);
+    return !!x && !!y && (x === y || x.indexOf(y + ' ') === 0 || y.indexOf(x + ' ') === 0);
+  }
+  const eur = n => '€' + Math.round(n).toLocaleString('nl-NL');
+  const PT_PHRASE = { bev: 'fully electric', phev: 'plug-in hybrid', hev: 'full hybrid', mhev: 'mild hybrid', ice: 'petrol or diesel' };
+  const SIZE_PRICE = [0, 20000, 26000, 34000, 44000, 58000];
+  // How well a body shape replaces another (1 = same). Our body classes: city, hatch, suv, estate, sedan, mpv.
+  const BODY_FIT = {
+    city: { city: 1, hatch: .8, suv: .5, estate: .2, sedan: .2, mpv: .3 },
+    hatch: { city: .7, hatch: 1, suv: .7, estate: .6, sedan: .5, mpv: .4 },
+    suv: { city: .3, hatch: .5, suv: 1, estate: .6, sedan: .3, mpv: .6 },
+    estate: { city: .2, hatch: .5, suv: .7, estate: 1, sedan: .5, mpv: .6 },
+    sedan: { city: .2, hatch: .5, suv: .5, estate: .8, sedan: 1, mpv: .3 },
+    mpv: { city: .2, hatch: .3, suv: .7, estate: .6, sedan: .2, mpv: 1 }
+  };
+  const bodyFit = (own, car) => (own && BODY_FIT[own] && BODY_FIT[own][car]) || .5;
+
+  // Measured gains against the owner's car, only from facts we hold on both sides. hasGain says whether the car is a real step.
+  function gainsFor(own, c, age) {
+    const out = [];
+    let has = false;
+    const ownRank = own.pt && own.pt in PT_RANK ? PT_RANK[own.pt] : null;
+    if (ownRank != null && PT_RANK[c.pt] > ownRank) { has = true; out.push({ k: 'Powertrain', t: (PT_PHRASE[own.pt] || own.pt) + ' → ' + (PT_PHRASE[c.pt] || c.pt) }); }
+    if (own.range && (c.pt === 'bev' || c.pt === 'phev') && (own.pt === 'bev' || own.pt === 'phev') && c.range && c.range >= own.range * 1.1) {
+      has = true; out.push({ k: 'Electric range', t: own.range + ' → ' + c.range + ' km (' + (c.range > own.range ? '+' : '') + (c.range - own.range) + ' km)' });
+    }
+    if (own.co2 && own.co2 > 0 && c.pt === 'bev') { has = true; out.push({ k: 'Exhaust CO₂', t: own.co2 + ' g/km → none' }); }
+    if (own.power && c.drive > own.power) { has = true; out.push({ k: 'Power', t: 'level ' + own.power + ' → ' + c.drive + ' of 5 on our scale' }); }
+    if (c.ncap >= 5 && c.ncapYr && own.year && c.ncapYr - own.year >= 4) { has = true; out.push({ k: 'Safety', t: 'Euro NCAP 5 stars (' + c.ncapYr + ' test, tougher rules than for a ' + own.year + ' car)' }); }
+    if (age != null && age >= 8 && c.tech >= 4) { has = true; out.push({ k: 'Technology', t: 'our rating ' + c.tech + ' of 5, for a ' + age + '-year-old car' }); }
+    if (own.listPrice) {
+      const d = c.price - own.listPrice, pct = Math.round(d / own.listPrice * 100);
+      out.push({ k: 'List price', t: eur(c.price) + ' vs about ' + eur(own.listPrice) + ' for yours when new (' + (d >= 0 ? '+' : '') + pct + '%)' });
+    }
+    return { list: out, hasGain: has };
+  }
+
+  // own = { make, model, pt, seats, size, power, year, listPrice, body, range, co2 }.
+  // opts: { prefs: { budget: same|u30|u45|u60|any, charge: yes|no|unsure, use: city|family|long }, exclude: [ids] }
+  function pickNext(own, cars, urls, opts) {
+    opts = opts || {};
+    const pf = opts.prefs || {};
+    const exclude = new Set(opts.exclude || []);
+    const recent = new Set(opts.recent || RECENT);
+    const pool = cars.filter(c => recent.has(c.id) && !exclude.has(c.id) && !sameBrand(c.brand, own.make));
+    const ownRank = own.pt && own.pt in PT_RANK ? PT_RANK[own.pt] : 1;
+    const age = own.year ? Math.max(0, (opts.thisYear || 2026) - own.year) : null;
+    const base = own.listPrice ? clamp(own.listPrice * 1.2, 16000, 80000) : (own.size ? SIZE_PRICE[own.size] : 34000);
+    const target = { u30: 27000, u45: 40000, u60: 55000 }[pf.budget] || base;
+    const cap = { u30: 33000, u45: 48000, u60: 65000 }[pf.budget] || null;
+    const wPrice = pf.budget === 'any' ? .4 : 1.5;
+    const scored = [];
+    pool.forEach(c => {
+      let fits = true;
+      if (own.seats && c.seats < Math.min(own.seats, 7)) fits = false;
+      if (own.size && Math.abs(c.size - own.size) > 1) fits = false;
+      if (cap && c.price > cap) fits = false;
+      const d = PT_RANK[c.pt] - ownRank;
+      let pt = d === 1 ? 1 : d === 2 ? .92 : d === 3 || d === 4 ? .8 : d === 0 ? .5 : .1;
+      // no home charging: plugs cost convenience, a self-charging hybrid does not
+      if (pf.charge === 'no') { if (c.pt === 'bev') pt *= .35; else if (c.pt === 'phev') pt *= .5; else if (c.pt === 'hev') pt = Math.max(pt, .9); }
+      else if (pf.charge === 'unsure') { if (c.pt === 'bev') pt *= .7; else if (c.pt === 'phev') pt *= .8; }
+      const size = own.size ? [1, .75, .3][Math.abs(c.size - own.size)] || 0 : .6;
+      const seats = own.seats ? (c.seats === own.seats ? 1 : c.seats > own.seats ? .8 : 0) : .6;
+      const price = Math.exp(-Math.abs(Math.log(c.price / target)) * 1.6);
+      const tech = c.tech / 5, safety = c.ncap ? (c.ncap >= 5 ? 1 : .6) : .4;
+      const body = own.body ? bodyFit(own.body, c.body) : .6;
+      const wTech = age != null && age >= 8 ? 1.0 : .6;
+      let use = 0;
+      if (pf.use === 'long') use = .8 * (c.pt === 'bev' ? clamp((c.range || 0) / 700, 0, 1) : .8) + .5 * (c.comfort || 3) / 5;
+      else if (pf.use === 'family') use = 1.0 * (c.space || 3) / 5;
+      else if (pf.use === 'city') use = .8 * (c.size <= 2 ? 1 : c.size === 3 ? .5 : .1);
+      const g = gainsFor(own, c, age);
+      const score = 2.2 * pt + 1.3 * size + .9 * seats + wPrice * price + wTech * tech + .4 * safety + 1.3 * body + use + (own.power ? .4 * (1 - Math.abs(c.drive - own.power) / 4) : 0);
+      scored.push({ car: c, score, fits, d, gains: g.list, hasGain: g.hasGain, parts: { pt, size, seats, price, tech, safety, body } });
+    });
+    scored.sort((a, b) => b.score - a.score);
+    // Cars with a measurable gain come first, then cars that fit but show none (never a powertrain step down before a level
+    // one), then cars that do not fit. Within each group the score decides.
+    const t1 = scored.filter(s => s.fits && s.hasGain && s.d >= 0);
+    const t2 = scored.filter(s => s.fits && !s.hasGain && s.d >= 0);
+    const t3 = scored.filter(s => s.fits && s.d < 0);
+    const t4 = scored.filter(s => !s.fits);
+    const ranked = t1.concat(t2, t3, t4);
+    const picks = [];
+    const brands = new Set();
+    for (const s of ranked) {
+      if (picks.length === 3) break;
+      if (brands.has(brandKey(s.car.brand))) continue;
+      // third pick: prefer a different powertrain from the first two when it scores within 12% of the best alternative
+      if (picks.length === 2) {
+        const alt = ranked.filter(x => !brands.has(brandKey(x.car.brand)));
+        const best = alt[0];
+        const diff = alt.find(x => x.d >= 0 && picks.every(p => p.car.pt !== x.car.pt) && x.score >= best.score * .88);
+        if (diff) { picks.push(diff); brands.add(brandKey(diff.car.brand)); break; }
+      }
+      picks.push(s); brands.add(brandKey(s.car.brand));
+    }
+    // One pick must share the owner's powertrain. Petrol and diesel count as the same family as mild hybrid, because the
+    // register reports a 48-volt mild hybrid as plain petrol and no newer car without any hybrid system is on file.
+    const fam = pt => (pt === 'ice' || pt === 'mhev') ? 'ice' : pt;
+    let sameNote = null;
+    if (own.pt && picks.length) {
+      const isSame = x => fam(x.car.pt) === fam(own.pt);
+      if (!picks.some(isSame)) {
+        const free = x => isSame(x) && !picks.some(p => p.car.id === x.car.id) && !picks.slice(0, 2).some(p => brandKey(p.car.brand) === brandKey(x.car.brand));
+        const cand = ranked.filter(free)[0] || scored.filter(free)[0] || scored.filter(x => isSame(x) && !picks.some(p => p.car.id === x.car.id))[0];
+        if (cand) { picks[picks.length - 1] = cand; }
+        else sameNote = 'none';
+      }
+      picks.forEach(x => { x.same = isSame(x); });
+      if (own.pt === 'ice' && picks.some(x => x.same && x.car.pt === 'mhev')) sameNote = 'mild';
+    }
+    const relaxed = picks.some(p => !p.fits);
+    picks.forEach(p => { p.sidestep = !p.hasGain; });
+    return { picks, relaxed, poolSize: pool.length, target, age, sameNote, capped: !!cap };
+  }
+
+  // Plain-English reasons, only from facts we hold.
+  function reasons(own, s, ownName) {
+    const c = s.car, out = [];
+    const ptTxt = c.pt === 'bev' ? ('Fully electric, about ' + c.range + ' km on the WLTP test' + (c.pc === 'i' ? ' (entry battery)' : ''))
+      : c.pt === 'phev' ? ('Plug-in hybrid' + (c.range ? ', about ' + c.range + ' km on electric power alone' : ''))
+      : c.pt === 'hev' ? 'Full hybrid: it charges itself, no plug needed' : c.pt === 'mhev' ? 'Mild hybrid with an automatic gearbox' : 'Petrol or diesel';
+    if (own.pt && c.pt !== own.pt) out.push(ptTxt + ', a step on from your ' + (PT_PHRASE[own.pt] || 'current') + ' car');
+    else out.push(ptTxt + ', and a much newer take on the same idea');
+    if (own.size) {
+      const dz = c.size - own.size;
+      out.push(dz === 0 ? 'About the same size as your ' + ownName + ', with ' + c.seats + ' seats' : dz > 0 ? 'A little bigger than your ' + ownName + ', with ' + c.seats + ' seats' : 'A little smaller outside than your ' + ownName + ', with ' + c.seats + ' seats');
+    } else out.push(c.seats + ' seats');
+    if (c.ncap && !(own.year && c.ncapYr && c.ncap >= 5 && c.ncapYr - own.year >= 4)) out.push('Euro NCAP ' + c.ncap + ' stars' + (c.ncapYr ? ' (' + c.ncapYr + ' test)' : ''));
+    else if (c.tech >= 4) out.push('Strong on technology (our rating ' + c.tech + ' out of 5)');
+    return out.slice(0, 3);
+  }
+
+  // RDW inrichting (body) -> our body class. RDW does not separate SUVs from other estates, so this is a best guess.
+  const INRICHTING = { hatchback: 'hatch', stationwagen: 'estate', sedan: 'sedan', mpv: 'mpv', 'multi purpose vehicle': 'mpv', coupe: 'sedan', cabriolet: 'hatch' };
+  function ownBodyFrom(engine, profile, inrichting) {
+    const hit = engine.CARS.find(c => sameBrand(c.brand, profile.make) && (() => {
+      const a = plain(c.model), b = plain(profile.model); return a && b && (a === b || a.indexOf(b + ' ') === 0 || b.indexOf(a + ' ') === 0);
+    })());
+    if (hit) return hit.body;
+    return INRICHTING[plain(inrichting)] || null;
+  }
+  // Extra figures from the fuel dataset. Field names are matched by pattern and every value is range-checked, so a renamed
+  // or missing field only means the figure is left out. Not yet confirmed against a live response.
+  function extraFuel(rows) {
+    const out = { range: null, co2: null };
+    if (!Array.isArray(rows)) return out;
+    const n = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : null; };
+    rows.forEach(row => {
+      if (!row || typeof row !== 'object') return;
+      Object.keys(row).forEach(k => {
+        const key = k.toLowerCase(), v = n(row[k]);
+        if (v == null) return;
+        if (/actie_?radius/.test(key) && !/stad|city/.test(key) && v >= 20 && v <= 1200) out.range = Math.max(out.range || 0, Math.round(v));
+        if (/^co2_uitstoot_gecombineerd/.test(key) && v > 0 && v < 600 && out.co2 == null) out.co2 = Math.round(v);
+      });
+    });
+    return out;
+  }
+  // Look a plate up in the visitor's browser (RDW open data). Resolves { status, profile?, own? }.
+  function loadPlate(engine, input, fetchFn, ms) {
+    const plate = engine.normalisePlate(input);
+    if (!plate) return Promise.resolve({ status: 'invalid' });
+    const f = fetchFn || (typeof fetch === 'function' ? fetch : null);
+    if (!f) return Promise.resolve({ status: 'error' });
+    const get = url => {
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = ctl ? setTimeout(() => ctl.abort(), ms || 10000) : null;
+      const done = () => { if (timer) clearTimeout(timer); };
+      return Promise.resolve().then(() => f(url, { signal: ctl ? ctl.signal : undefined, referrerPolicy: 'no-referrer', cache: 'no-store', credentials: 'omit' }))
+        .then(r => { if (!r || !r.ok) throw new Error('http'); return r.json(); })
+        .then(j => { if (!Array.isArray(j)) throw new Error('shape'); done(); return j; }, e => { done(); throw e; });
+    };
+    const q = '?kenteken=' + encodeURIComponent(plate);
+    const base = 'https://opendata.rdw.nl/resource/';
+    return Promise.all([get(base + 'm9d7-ebf2.json' + q + '&$limit=1'), get(base + '8ys7-d773.json' + q).catch(() => null)]).then(r => {
+      const res = engine.plateProfile(r[0], r[1]);
+      if (res.status !== 'ok') return res;
+      const row = r[0][0] || {};
+      const d = String(row.datum_eerste_toelating || ''), year = /^\d{8}$/.test(d) ? parseInt(d.slice(0, 4), 10) : null;
+      const lp = parseFloat(String(row.catalogusprijs || '').replace(',', '.'));
+      const p = res.profile;
+      const x = extraFuel(r[1]);
+      const own = { make: p.make, model: p.model, pt: p.pt, seats: p.seats, size: p.size, power: p.power, year, kw: p.kw, massKg: p.massKg,
+        listPrice: isFinite(lp) && lp >= 3000 && lp <= 400000 ? lp : null, body: ownBodyFrom(engine, p, row.inrichting), fuel: p.fuel,
+        range: (p.pt === 'bev' || p.pt === 'phev') ? x.range : null, co2: x.co2 };
+      return { status: 'ok', profile: p, own };
+    }, () => ({ status: 'error' }));
+  }
+
+  const API = { BRAND_HOME, gainsFor, extraFuel, loadPlate, ownBodyFrom, RECENT, REVIEWS, pickNext, reasons, sameBrand, brandKey, eur, PT_PHRASE };
+  root.NextCar = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.ShortList, N = window.NextCar;
+  const $ = id => document.getElementById(id);
+  const urls = {};
+  E.CARS.forEach(c => { const d = E.describe([c.id], 'cash'); urls[c.id] = d && d[0] ? d[0].modelUrl : null; });
+
+  const EXAMPLES = [
+    { label: '2013 Volkswagen Golf, petrol', own: { make: 'Volkswagen', model: 'Golf', pt: 'ice', seats: 5, size: 3, power: 3, year: 2013, listPrice: 24000, body: 'hatch', fuel: 'Petrol', kw: 90, co2: 125 } },
+    { label: '2016 Toyota Yaris, hybrid', own: { make: 'Toyota', model: 'Yaris', pt: 'hev', seats: 5, size: 2, power: 2, year: 2016, listPrice: 21000, body: 'hatch', fuel: 'Hybrid (Petrol + electric)', kw: 74, co2: 86 } },
+    { label: '2018 Kia Sportage, diesel', own: { make: 'Kia', model: 'Sportage', pt: 'ice', seats: 5, size: 3, power: 2, year: 2018, listPrice: 36995, body: 'suv', fuel: 'Diesel', kw: 85, co2: 129 } },
+    { label: '2015 Renault Twingo, petrol', own: { make: 'Renault', model: 'Twingo', pt: 'ice', seats: 4, size: 1, power: 1, year: 2015, listPrice: 12000, body: 'city', fuel: 'Petrol', kw: 51, co2: 114 } },
+    { label: '2019 Tesla Model 3, electric', own: { make: 'Tesla', model: 'Model 3', pt: 'bev', seats: 5, size: 3, power: 5, year: 2019, listPrice: 50000, body: 'sedan', fuel: 'Electric', kw: 211, range: 560 } }
+  ];
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const setMsg = t => { $('msg').textContent = t || ''; };
+
+  // state: the owner's car, the three optional answers, and the cars they swapped out
+  let st = null;
+  const FIELDS = [
+    { key: 'budget', label: 'Budget', opts: [['same', 'Close to what your car cost'], ['u30', 'Up to €33,000'], ['u45', 'Up to €48,000'], ['u60', 'Up to €65,000'], ['any', 'No limit']] },
+    { key: 'charge', label: 'Can you charge at home?', opts: [['yes', 'Yes'], ['no', 'No'], ['unsure', 'Not sure']] },
+    { key: 'use', label: 'Main use', opts: [['city', 'Town and short trips'], ['family', 'Family and luggage'], ['long', 'Long motorway trips']] }
+  ];
+  function tuneHtml() {
+    return '<section class="card tune" aria-labelledby="tunelbl"><div><h2 id="tunelbl">Fine-tune (optional)</h2><p>Three quick answers sharpen the picks. Skip them and you get the general version.</p></div>' +
+      FIELDS.map(f => '<div class="grp" role="group" aria-label="' + esc(f.label) + '"><span class="lbl" style="margin:0">' + esc(f.label) + '</span><div class="opts">' +
+        f.opts.map(o => '<button type="button" class="opt" data-k="' + f.key + '" data-v="' + o[0] + '" aria-pressed="' + (st.prefs[f.key] === o[0]) + '">' + esc(o[1]) + '</button>').join('') + '</div></div>').join('') + '</section>';
+  }
+
+  function render(first, refocus) {
+    const own = st.own;
+    const name = (own.make + ' ' + own.model).trim();
+    const res = N.pickNext(own, E.CARS, urls, { prefs: st.prefs, exclude: st.skip });
+    const bits = [];
+    if (own.year) bits.push(own.year + (res.age != null ? ' (' + res.age + ' years old)' : ''));
+    if (own.fuel) bits.push(own.fuel);
+    if (own.seats) bits.push(own.seats + ' seats');
+    if (own.kw) bits.push(own.kw + ' kW');
+    if (own.range) bits.push('about ' + own.range + ' km electric');
+    let html = '<div class="card own"><div><span class="mono">Your car</span><h2>' + esc(name) + '</h2><p>' + esc(bits.join(' · ')) + (own.listPrice ? ' · list price when new about ' + N.eur(own.listPrice) : '') + '</p></div></div>';
+    html += tuneHtml();
+    if (!res.picks.length) {
+      html += '<div class="callout warn">We do not have a car that fits yours yet.' + (st.skip.length ? ' <button type="button" class="reset" id="reset">Bring back the cars you skipped</button>' : '') + '</div>';
+      $('out').innerHTML = html; return;
+    }
+    html += '<div class="res"><h2>Three steps forward</h2>';
+    if (res.sameNote === 'none') html += '<div class="callout">We do not have a newer car with the same powertrain as yours on file, so none of the three matches it.</div>';
+    if (res.sameNote === 'mild') html += '<div class="callout">The register lists mild hybrids as petrol. The closest newer match to a petrol or diesel car is a mild hybrid, and one of the three is.</div>';
+    if (res.relaxed) html += '<div class="callout warn">None of the cars we hold matches your car\'s size, seats' + (res.capped ? ' or your budget' : '') + ' exactly. These are the closest.</div>';
+    if (st.skip.length) html += '<p class="note" style="margin:0">' + st.skip.length + ' car' + (st.skip.length > 1 ? 's' : '') + ' skipped. <button type="button" class="reset" id="reset">Bring them back</button></p>';
+    const tags = ['Best step forward', 'Strong alternative', 'Wildcard'];
+    res.picks.forEach((s, i) => {
+      const c = s.car, rv = N.REVIEWS[c.id], pl = (c.pc === 'i' ? '≈ ' : '') + N.eur(c.price);
+      const spec = [['From', pl], ['Powertrain', E.PT_LABEL[c.pt] || c.pt], ['Range', c.range ? c.range + ' km' + (c.pt === 'phev' ? ' electric' : '') : '–'], ['Seats', c.seats], ['Euro NCAP', c.ncap ? c.ncap + ' stars' + (c.ncapYr ? ' (' + c.ncapYr + ')' : '') : 'not on file']];
+      const home = N.BRAND_HOME[N.brandKey(c.brand)];
+      const mf = urls[c.id] ? '<a class="link" href="' + esc(urls[c.id]) + '" target="_blank" rel="noopener noreferrer">Manufacturer page<small>Dutch model page</small></a>' : home ? '<a class="link" href="' + esc(home) + '" target="_blank" rel="noopener noreferrer">Manufacturer home page<small>Model page not found</small></a>' : '<span class="link none">Manufacturer page<small>Not on file yet</small></span>';
+      const rvh = rv ? '<a class="link" href="' + esc(rv.url) + '" target="_blank" rel="noopener noreferrer">Independent coverage<small>' + esc(rv.source + (rv.how ? ', ' + rv.how : '')) + '</small></a>' : '<span class="link none">Independent review<small>We do not have one on file</small></span>';
+      const gains = s.gains.length ? '<div class="gh">Measured against your ' + esc(name) + '</div><ul class="gains">' + s.gains.map(g => '<li><b>' + esc(g.k) + '</b><span>' + esc(g.t) + '</span></li>').join('') + '</ul>' : '';
+      html += '<article class="card pick"><div class="top"><span class="rank"><span class="n">' + (i + 1) + '</span>' + tags[i] + '</span>' + (s.same ? '<span class="chip">Same powertrain as yours</span>' : '') + '</div>' +
+        '<div class="bl">' + esc(c.brand) + '</div><h3>' + esc(c.model) + '</h3>' +
+        '<dl class="specs">' + spec.map(x => '<div><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + '</dd></div>').join('') + '</dl>' +
+        gains + (s.sidestep ? '<p class="note">On the figures we hold, this is a sidestep rather than a clear step forward from your ' + esc(name) + '. It is here because it fits your car and budget.</p>' : '') +
+        '<ul class="why">' + N.reasons(own, s, name).map(r => '<li>' + esc(r) + '</li>').join('') + '</ul>' +
+        '<div class="foot"><div class="links">' + mf + rvh + '</div><button type="button" class="swap" data-id="' + esc(c.id) + '" aria-label="Not this one: show another instead of ' + esc(c.brand + ' ' + c.model) + '">Not this one</button></div></article>';
+    });
+    html += '<p class="note">Ratings and prices come from our own research; check the manufacturer page for today\'s offer. List prices are not adjusted for inflation. Cars from your own brand are left out on purpose.</p></div>';
+    $('out').innerHTML = html;
+    if (first) $('out').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    if (refocus) { const el = refocus.id ? $('out').querySelector(refocus.id) : $('out').querySelector('.opt[data-k="' + refocus.k + '"][data-v="' + refocus.v + '"]'); if (el) el.focus(); }
+  }
+  function start(own) { st = { own, prefs: {}, skip: [] }; render(true); }
+
+  $('out').addEventListener('click', e => {
+    if (!st) return;
+    const o = e.target.closest('.opt');
+    if (o) { const k = o.dataset.k, v = o.dataset.v; if (st.prefs[k] === v) delete st.prefs[k]; else st.prefs[k] = v; render(false, { k, v }); return; }
+    const sw = e.target.closest('.swap');
+    if (sw) { st.skip.push(sw.dataset.id); render(false, { id: '.swap' }); return; }
+    if (e.target.closest('#reset')) { st.skip = []; render(false, { id: '.swap' }); }
+  });
+
+  $('exs').innerHTML = EXAMPLES.map((x, i) => '<button type="button" class="ex" data-i="' + i + '">' + esc(x.label) + '</button>').join('');
+  $('exs').addEventListener('click', e => {
+    const b = e.target.closest('.ex'); if (!b) return;
+    setMsg(''); start(EXAMPLES[+b.dataset.i].own);
+  });
+
+  const MSGS = {
+    invalid: 'That does not look like a Dutch plate. Enter six letters and digits, for example XX-123-Y.',
+    notfound: 'We could not find that plate in the vehicle register. Check it and try again.',
+    notcar: 'That plate belongs to a vehicle that is not a passenger car, so we cannot suggest a replacement.',
+    error: 'The vehicle register could not be reached. If you are viewing this inside the Claude app, the lookup is blocked there; open the page as its own website, or try an example above.'
+  };
+  $('plateForm').addEventListener('submit', e => {
+    e.preventDefault(); setMsg('');
+    const btn = $('go'); btn.disabled = true; btn.textContent = 'Looking up…';
+    N.loadPlate(E, $('plateIn').value).then(r => {
+      if (r.status !== 'ok') { setMsg(MSGS[r.status] || MSGS.error); return; }
+      start(r.own);
+    }).catch(() => setMsg(MSGS.error)).then(() => { btn.disabled = false; btn.textContent = 'Find my next car'; });
+  });
+
+  $('theme').addEventListener('click', () => {
+    const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark';
+  });
+})();
+</script>
+
+</body></html>
